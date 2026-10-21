@@ -40,19 +40,19 @@ jobs:
       fail-fast: false
       matrix:
         shell: [powershell, pwsh]
-    # Las expresiones no se admiten en el 'shell' de cada paso, pero sí en los valores por defecto del job.
-    defaults:
-      run:
-        shell: ${{ matrix.shell }}
+    # Sin expresiones en 'shell': cada paso corre en pwsh y lanza la versión de la matriz
+    # (powershell = Windows PowerShell 5.1, pwsh = PowerShell 7), cada una con sus módulos.
     steps:
       - uses: actions/checkout@v4
       - name: Instalar Pester 5.7.1
-        run: Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Force -SkipPublisherCheck
+        shell: pwsh
+        run: '& ${{ matrix.shell }} -NoProfile -Command "Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Force -SkipPublisherCheck"'
       - name: Pruebas unitarias e integración (solo lectura)
+        shell: pwsh
         run: |
-          $extra = @{}
-          if ('${{ github.event.inputs.admin }}' -eq 'true') { $extra.Admin = $true }
-          ./tests/Invoke-AmonTests.ps1 -Integration @extra -OutputXml "test-results-${{ matrix.shell }}.xml"
+          $extra = @()
+          if ('${{ github.event.inputs.admin }}' -eq 'true') { $extra += '-Admin' }
+          & ${{ matrix.shell }} -NoProfile -ExecutionPolicy Bypass -File ./tests/Invoke-AmonTests.ps1 -Integration @extra -OutputXml "test-results-${{ matrix.shell }}.xml"
       - name: Resultados
         if: always()
         uses: actions/upload-artifact@v4
