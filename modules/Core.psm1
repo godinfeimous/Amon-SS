@@ -13,8 +13,8 @@
     sistema analizado. Las únicas escrituras son los ajustes del propio Amon SS y los reportes.
 #>
 
-$script:AmonVersion = '1.0.0'
-$script:AmonBuildDate = '2026-10-20'
+$script:AmonVersion = '1.1.0'
+$script:AmonBuildDate = '2026-10-21'
 # tools\Build-Release.ps1 lo cambia a $true en el paquete: una release exige Integrity.psd1.
 $script:AmonReleaseBuild = $false
 $script:RepoRoot = Split-Path -Parent $PSScriptRoot
@@ -576,6 +576,58 @@ function Test-AmonLocalPath {
     return $script:DriveTypes[$root] -in @('Fixed', 'Removable')
 }
 
+function Test-AmonUserWritablePath {
+    # Carpetas del usuario o de otras unidades: donde suelen acabar las descargas y las
+    # herramientas portables (no Windows, Program Files ni ProgramData).
+    param([AllowNull()][AllowEmptyString()][string]$Path)
+    if (-not $Path -or $Path -notmatch '^[A-Za-z]:\\') { return $false }
+    $sys = ($env:SystemDrive + '\').ToUpperInvariant()
+    $p = $Path.ToUpperInvariant()
+    if (-not $p.StartsWith($sys)) { return $true }
+    foreach ($ex in @($env:SystemRoot, $env:ProgramFiles, ${env:ProgramFiles(x86)}, $env:ProgramW6432, $env:ProgramData)) {
+        if ($ex -and $p.StartsWith($ex.TrimEnd('\').ToUpperInvariant() + '\')) { return $false }
+    }
+    return $p.StartsWith($sys + 'USERS\')
+}
+
+function Get-AmonScreenshareTool {
+    # Nombre de la herramienta de SS conocida (knownScreenshareTools en los ajustes) a la que
+    # pertenece un texto (ruta, servicio...), o $null. Sus rastros son del propio staff.
+    param([Parameter(Mandatory = $true)]$Context, [AllowEmptyString()][string]$Text)
+    if (-not $Text) { return $null }
+    foreach ($t in @($Context.Settings.knownScreenshareTools)) {
+        foreach ($p in @($t.patterns)) { if ($p -and $Text.IndexOf([string]$p, [StringComparison]::OrdinalIgnoreCase) -ge 0) { return [string]$t.name } }
+    }
+    return $null
+}
+
+function Get-AmonToolByFileName {
+    # Indicador de tipo filename (autoclicker, inyector, macro...) que coincide con un nombre de
+    # ejecutable. Prefetch trunca el nombre a 29 caracteres: entonces vale el prefijo.
+    param([Parameter(Mandatory = $true)]$Context, [AllowEmptyString()][string]$Name)
+    if (-not $Name -or -not $Context.Signatures -or -not $Context.Signatures.PSObject.Properties['FileNames'] -or -not $Context.Signatures.FileNames) { return $null }
+    $low = [IO.Path]::GetFileName($Name).ToLowerInvariant()
+    $hit = $Context.Signatures.FileNames[$low]
+    if (-not $hit -and $low.Length -ge 29) {
+        $k = @($Context.Signatures.FileNames.Keys | Where-Object { $_.StartsWith($low) }) | Select-Object -First 1
+        if ($k) { $hit = $Context.Signatures.FileNames[$k] }
+    }
+    if ($hit) { return $hit[0] }
+    return $null
+}
+
+function New-AmonToolFinding {
+    # Hallazgo por el nombre exacto de una herramienta conocida. Un nombre concreto y público
+    # (fuerza media o alta) basta para afirmar que esa herramienta estuvo ahí; uno débil, no.
+    param([string]$Module, [Parameter(Mandatory = $true)]$Indicator, [string]$Path, $TimestampUtc, [string]$What, [string]$Detail, [string]$Category = 'ToolExecution', [switch]$NotExecution)
+    $solid = $Indicator.Validated -or $Indicator.Strength -in @('strong', 'medium')
+    New-AmonFinding -Module $Module -Category $Category -Title $What -Status $(if ($solid) { 'DETECTED' } else { 'INCONCLUSIVE' }) -Severity Medium -Confidence $(if ($solid) { 'Medium' } else { 'Low' }) `
+        -Path $Path -TimestampUtc $TimestampUtc -Indicator $Indicator.Value -IndicatorType 'filename' -Client $Indicator.ClientName -ClientId $Indicator.ClientId `
+        -Source "$Module; firma: $($Indicator.Source)" `
+        -Justification ("{0} El nombre '{1}' es el de {2} ({3}{4}). {5}" -f $Detail, $Indicator.Value, $Indicator.ClientName, $Indicator.Provenance, $(if ($Indicator.Validated) { ', validada' } else { ', sin validar' }), $(if ($Indicator.Note) { $Indicator.Note } else { '' })).Trim() `
+        -FalsePositives @('Otro programa con el mismo nombre de archivo.') -Data @{ Execution = (-not $NotExecution) }
+}
+
 function Add-AmonEvidencePath {
     # Ruta mencionada por un artefacto (Prefetch, Recent, proceso...) que puede merecer
     # un escaneo de firmas si todavía existe. Las rutas de red se descartan.
@@ -865,7 +917,7 @@ Export-ModuleMember -Function @(
     'Test-AmonAdmin', 'Get-AmonCurrentUserSid', 'New-AmonReviewId',
     'ConvertFrom-AmonFileTime', 'ConvertTo-AmonUtc', 'Format-AmonTimestamp', 'Get-AmonTimeZoneLabel', 'Test-AmonInWindow',
     'New-AmonEvidence', 'New-AmonFinding', 'New-AmonEvent', 'New-AmonModuleResult', 'Complete-AmonModuleResult',
-    'New-AmonContext', 'Add-AmonIndicator', 'Add-AmonEvidencePath', 'Test-AmonLocalPath', 'Test-AmonKeywordMatch', 'Write-AmonLog',
+    'New-AmonContext', 'Add-AmonIndicator', 'Add-AmonEvidencePath', 'Test-AmonLocalPath', 'Test-AmonUserWritablePath', 'Get-AmonScreenshareTool', 'Get-AmonToolByFileName', 'New-AmonToolFinding', 'Test-AmonKeywordMatch', 'Write-AmonLog',
     'Update-AmonProgress', 'Test-AmonCancel', 'Invoke-AmonModule',
     'Open-AmonReadStream', 'Read-AmonFileBytes', 'Get-AmonFileHash', 'Get-AmonFileFacts', 'Get-AmonChildItemSafe',
     'Protect-AmonCommandLine', 'Import-AmonNative', 'Test-AmonNativeZip'

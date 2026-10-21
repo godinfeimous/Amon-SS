@@ -1,18 +1,19 @@
 # Módulos
 
-Referencia funcional de cada módulo: qué artefactos lee, qué campos extrae, qué muestra, qué hallazgos puede producir (categoría, estado, severidad y confianza), cómo filtra por privacidad y si necesita administrador. Los estados se explican en el [README](../README.md#estados-de-resultado) y las reglas de las firmas en [SIGNATURES.md](SIGNATURES.md).
+Referencia funcional de cada módulo: qué artefactos lee, qué campos extrae, qué muestra, qué hallazgos puede producir (categoría, estado, severidad y confianza), cómo filtra por privacidad y si necesita administrador. Los módulos aparecen en el orden en que los ejecuta el escaneo completo; la **tecla** indica cómo lanzarlos sueltos desde el menú final (`M` = Más opciones, ver [COMMANDS.md](COMMANDS.md#más-opciones-m)). Los estados se explican en el [README](../README.md#estados-de-resultado) y las reglas de las firmas en [SIGNATURES.md](SIGNATURES.md).
 
 Notas comunes:
 
 - Todos los módulos son de solo lectura, registran lo que revisaron en `Scope` y lo que no pudieron revisar en `Limitations`, y aparecen en el reporte con su estado (`COMPLETADO`, `PARCIAL`, `SIN ACCESO`, `OMITIDO`, `ERROR` o `CANCELADO`), su duración, los artefactos revisados y los hallazgos.
-- "Relevante" significa relacionado con Minecraft, con un launcher, con una palabra clave de la revisión o con un indicador concreto ya encontrado por otro módulo (solo el escáner de firmas registra indicadores, y solo con detecciones `DETECTED`). Lo que no es relevante se cuenta pero no se muestra.
+- "Relevante" significa relacionado con Minecraft, con un launcher, con una palabra clave de la revisión o con un indicador concreto ya encontrado por otro módulo (solo el escáner de firmas registra indicadores, y solo con detecciones `DETECTED`). En Procesos, Prefetch, BAM, PCA y ShimCache también cuenta el nombre exacto de una herramienta conocida (firmas de tipo `filename`). Lo que no es relevante se cuenta pero no se muestra.
 - Las rutas sacadas de artefactos solo se usan si son rutas absolutas de una unidad local, fija o extraíble (`Test-AmonLocalPath`): los recursos de red no se comprueban ni se escanean (ver [LIMITATIONS.md](LIMITATIONS.md#principios-generales)).
 - El fin de la ventana de análisis avanza hasta "ahora" al empezar cada módulo y al correlacionar: lo que ocurre durante la revisión entra en el análisis.
 - Las tablas de la terminal muestran como máximo `maxTableRows` filas (40); el reporte contiene todo.
+- Un nombre de herramienta conocida (`ToolExecution`, `New-AmonToolFinding`) da `DETECTED` (Medium / Medium) si el indicador está validado o tiene fuerza media o fuerte, e `INCONCLUSIVE` (Medium / Low) si es débil y sin validar. Se marca como evidencia de ejecución y lleva el cliente o la herramienta de la firma.
 
-## 02 Minecraft Analysis
+## Minecraft Analysis
 
-**Administrador:** no.
+**Tecla:** `M` > `1`. **Administrador:** no.
 
 **Lee:**
 
@@ -59,11 +60,11 @@ En cada instancia lee `latest.log` y los logs rotados `AAAA-MM-DD-N.log[.gz]` mo
 
 **Privacidad:** no lee archivos de cuentas (`launcher_accounts*.json` ni archivos de credenciales). Sí muestra el nombre de usuario de Minecraft que aparece en los logs, porque identifica la cuenta revisada.
 
-## 03 Cheat Signature Scanner
+## Cheat Signature Scanner
 
-**Administrador:** no.
+**Tecla:** `M` > `2` (y `M` > `X` para añadir una ruta). **Administrador:** no.
 
-**Lee:** los JAR de `mods` de cada instancia; los JAR de `versions\` cuyo SHA-1 no está verificado (si `scan.scanVersionJarsWhenHashUnverified` es `true`); `scan.extraScanPaths` y las rutas adicionales de la opción 03 (en carpetas: `*.jar`, `*.exe`, `*.dll` y `*.zip` hasta 2 niveles); las rutas de configuración que indican las firmas (en cada `gameDir` y en `%USERPROFILE%`); los perfiles de versión; y los logs ya interpretados por Minecraft. Si no se ejecutó Minecraft en la sesión, el menú lo lanza antes. Las rutas de la opción 03 se guardan como dato en la sesión (`ExtraScanPaths`) y se incluyen en todos los escaneos posteriores de esa sesión.
+**Lee:** los JAR de `mods` de cada instancia; los JAR de `versions\` cuyo SHA-1 no está verificado (si `scan.scanVersionJarsWhenHashUnverified` es `true`); `scan.extraScanPaths` y las rutas adicionales de `M` > `X` (en carpetas: `*.jar`, `*.exe`, `*.dll` y `*.zip` hasta 2 niveles); las rutas de configuración que indican las firmas (en cada `gameDir` y en `%USERPROFILE%`); los perfiles de versión; y los logs ya interpretados por Minecraft. Si no se ejecutó Minecraft en la sesión, el menú lo lanza antes. Las rutas de `M` > `X` se guardan como dato en la sesión (`ExtraScanPaths`) y se incluyen en todos los escaneos posteriores de esa sesión.
 
 Cada escaneo vuelve a revisar todos los archivos: los escaneos repetidos o interrumpidos no se saltan nada.
 
@@ -87,13 +88,13 @@ Cada escaneo vuelve a revisar todos los archivos: los escaneos repetidos o inter
 
 **Pasada sobre evidencias** (solo en el escaneo completo): `Signature Scan (evidencias)` escanea los `.jar`, `.exe`, `.dll` y `.zip` que todavía existen y que citaron otros módulos (solo rutas locales), con las mismas reglas. Omite únicamente los archivos que ya se escanearon por completo en la sesión.
 
-## 04 Process Inspector
+## Process Inspector
 
-**Administrador:** no. Para listar las DLL de un Java que se ejecuta como administrador, Amon SS también debe ejecutarse elevado.
+**Tecla:** `M` > `3`. **Administrador:** no. Para listar las DLL de un Java que se ejecuta como administrador, Amon SS también debe ejecutarse elevado.
 
 **Lee:** `Win32_Process` (nombre, PID, PID del padre, ruta, línea de comandos y hora de inicio), la firma Authenticode de los ejecutables y la lista de módulos cargados (rutas de DLL) de cada proceso Java.
 
-**Selecciona como relevantes:** los procesos de `launcherProcessNames` (Java y launchers), los que tienen una palabra clave en el nombre o la ruta, y los que citan un indicador en su línea de comandos.
+**Selecciona como relevantes:** los procesos de `launcherProcessNames` (Java y launchers), los que tienen una palabra clave en el nombre o la ruta, los que se llaman como una herramienta conocida (firmas `filename`) y los que citan un indicador en su línea de comandos.
 
 **Extrae de cada Java:** ejecutable, clase principal o `-jar`, agentes `-javaagent`, mods de `-Dfabric.addMods`, classpath (y los JAR que no son librerías, versiones ni runtimes), `-Xbootclasspath`, `--gameDir`, `--version`, `--username` y `--assetIndex`. La línea de comandos se tokeniza con las reglas de `CommandLineToArgvW`.
 
@@ -103,23 +104,57 @@ Cada escaneo vuelve a revisar todos los archivos: los escaneos repetidos o inter
 
 | Categoría | Estado | Severidad / confianza | Cuándo |
 | --- | --- | --- | --- |
+| `ToolExecution` | `DETECTED` o `INCONCLUSIVE` (ver notas comunes) | Medium / Medium o Low | El nombre del proceso coincide con una firma `filename`: la herramienta está abierta durante la revisión. Su ejecutable se añade a las rutas de evidencia. |
 | `ClientProcess` | `DETECTED` (indicador validado) o `INCONCLUSIVE` (sin validar) | Medium / Medium (validado) o Low (sin validar) | La línea de comandos contiene un `jvmArg` de las firmas. Evidencia de ejecución. |
 | `JavaAgentProcess` | `INCONCLUSIVE` (o `INFO` si es el agente de Lunar Client) | Medium (o Info) / Medium | El proceso Java usa `-javaagent`. El JAR del agente se escanea en la pasada de evidencias. |
+| `RuntimeAgent` | `INCONCLUSIVE` | Medium / Medium | `instrument.dll` (la parte nativa de `java.lang.instrument`) está cargada pero la línea de comandos no declara `-javaagent`, `-agentpath` ni `-agentlib`: el agente se añadió con el juego ya en marcha. |
+| `GlobalInputHook` | `INCONCLUSIVE` | Medium / High | El Java tiene cargado un módulo `JNativeHook*.dll`, que instala un gancho global de teclado y ratón (la base de muchos autoclickers en Java). Su `-jar` y su classpath fuera de librerías se añaden a las rutas de evidencia. |
 | `UnsignedModule` | `INCONCLUSIVE` | Low / Low | DLL sin firma válida cargada desde una carpeta de usuario, `ProgramData` o temporal. Excluye Windows, el propio Java, las nativas conocidas (LWJGL, GLFW, OpenAL, JNA, OBS, Steam, RivaTuner, Discord, Simple Voice Chat) y las carpetas de Lunar. |
 | `UnsignedJava` | `INFO` | Info / Medium | El ejecutable de Java no tiene firma válida (suele ser un runtime empaquetado por un launcher). |
 | `KeywordName` | `INCONCLUSIVE` | Low / Low | Nombre o ruta del proceso con una palabra clave de un cliente. |
 
 **Eventos:** proceso iniciado (sigue en ejecución), si empezó dentro del periodo. Los agentes, los JAR de la línea de comandos y las DLL señaladas se añaden a las rutas de evidencia si son rutas locales absolutas.
 
-**Privacidad:** solo se muestran los procesos relevantes; del resto solo se da el recuento. Se ocultan `--accessToken`, `--session`, `--clientId`, `--xuid`, `--password`, `--token`, `--refreshToken`, `--userProperties`, las propiedades `-D` con `token`, `password`, `passwd`, `secret`, `session` o `auth`, y los JWT. Nunca se finalizan procesos ni se lee su memoria.
+**Privacidad:** solo se muestran los procesos relevantes; del resto solo se da el recuento. Se ocultan `--accessToken`, `--session`, `--clientId`, `--xuid`, `--password`, `--token`, `--refreshToken`, `--userProperties`, las propiedades `-D` con `token`, `password`, `passwd`, `secret`, `session` o `auth`, y los JWT. Nunca se finalizan procesos, y este módulo no lee su memoria (de eso se encarga Java Memory Scanner).
 
-## 05 Prefetch Analyzer
+## Java Memory Scanner
 
-**Administrador:** sí. Sin elevación devuelve `SIN ACCESO`.
+**Tecla:** `M` > `J`. **Administrador:** no, salvo que el juego se ejecute como administrador (entonces Windows no deja abrir su memoria sin elevación y el proceso se informa como advertencia).
+
+**Lee:** la memoria de los `java.exe` y `javaw.exe` en ejecución (`Win32_Process`), con la clase C# `ProcessMemory` de `AmonNative.cs`: `OpenProcess` con `PROCESS_QUERY_INFORMATION | PROCESS_VM_READ` (o `PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ`), `VirtualQueryEx` para recorrer las regiones y `ReadProcessMemory` solo en las comprometidas y legibles (sin `PAGE_GUARD` ni `PAGE_NOACCESS`). Cada región se busca por separado con el autómata Aho-Corasick: no se unen cadenas de regiones distintas. No se escribe, no se suspende el proceso y no se guarda nada de su contenido.
+
+**Patrones** (`Get-AmonMemoryPatterns`, a partir del conjunto de firmas):
+
+| Origen | Formas buscadas |
+| --- | --- |
+| `package` de 8 o más caracteres | Forma interna de la JVM (`net/wurstclient/`) y forma Java (`net.wurstclient.`), en ASCII. |
+| `entrypoint` | Clase con puntos y en forma interna con `/`, en ASCII. |
+| `string` de 10 o más caracteres (no `regex`) | ASCII/UTF-8 y UTF-16LE, sea cual sea su `encodings`. |
+| `memory` de 10 o más caracteres | ASCII/UTF-8 y UTF-16LE. |
+
+Las cadenas más cortas no se usan: en gigabytes de memoria aparecerían por azar.
+
+**Límites:** 3 GB y 60 s por proceso (o menos, si antes se agota el tiempo del módulo). Un proceso escaneado en parte se anota en las limitaciones.
+
+**Muestra:** la tabla PROCESOS ESCANEADOS (proceso, PID, MB leídos, número de firmas y ruta) y las tarjetas de hallazgos.
+
+**Hallazgos:**
+
+| Categoría | Estado | Severidad / confianza | Cuándo |
+| --- | --- | --- | --- |
+| `ClientMemory` | `DETECTED` o `INCONCLUSIVE` | Las mismas reglas que un archivo (`Get-AmonSignatureDetections`) | La memoria del proceso contiene firmas de un cliente: está cargado ahora, haya o no un JAR en disco. Cada coincidencia es una evidencia con su forma, codificación y dirección. Es ancla de correlación y cuenta como evidencia de ejecución. |
+
+**Eventos:** "Firmas de cliente en memoria", con la hora del escaneo.
+
+**Sin Java en ejecución:** el módulo queda `OMITIDO` con la limitación "No había ningún proceso de Java en ejecución: abre Minecraft antes de la revisión para poder escanear su memoria."
+
+## Prefetch Analyzer
+
+**Tecla:** `M` > `4`. **Administrador:** sí. Sin elevación devuelve `SIN ACCESO`.
 
 **Lee:** `C:\Windows\Prefetch\*.pf` (SCCA v17, v23, v26, v30 y v31; los comprimidos MAM se descomprimen con `RtlDecompressBufferEx`), el valor `EnablePrefetcher` del registro y el mapa de volúmenes para traducir `\VOLUME{...}` y `\DEVICE\HarddiskVolumeN` a letras de unidad. El mapa solo consulta los discos locales, fijos y extraíbles (`Win32_LogicalDisk` y `QueryDosDevice`): una unidad de red desconectada podría bloquear la consulta.
 
-**Selecciona como relevantes:** los Prefetch de Java (`JAVA.EXE`, `JAVAW.EXE`), de launchers, de ejecutables con palabra clave y los que referencian un archivo señalado. La decisión se toma sobre los nombres en bruto, antes de traducir rutas: solo los Prefetch relevantes pagan la conversión de rutas y el análisis por archivo.
+**Selecciona como relevantes:** los Prefetch de Java (`JAVA.EXE`, `JAVAW.EXE`), de launchers, de ejecutables con palabra clave, de herramientas conocidas por nombre (firmas `filename`; Prefetch trunca el nombre a 29 caracteres y entonces vale el prefijo), de programas ejecutados desde una unidad externa (ver `DetachedVolumeExecution`) y los que referencian un archivo señalado. La decisión se toma sobre los nombres en bruto, antes de traducir rutas: solo los Prefetch relevantes pagan la conversión de rutas y el análisis por archivo.
 
 **Extrae:** ejecutable, hash del Prefetch, versión del formato, si estaba comprimido, contador de ejecuciones, hasta 8 últimas ejecuciones, ruta del ejecutable, JAR referenciados que no son librerías ni JAR de versión, coincidencias con indicadores, rutas con palabras clave y fechas del propio `.pf`.
 
@@ -130,79 +165,84 @@ Cada escaneo vuelve a revisar todos los archivos: los escaneos repetidos o inter
 | Categoría | Estado | Severidad / confianza | Cuándo |
 | --- | --- | --- | --- |
 | `ExecutionEvidence` | `DETECTED` | Medium / Medium | El Prefetch referencia un archivo con el mismo nombre que un indicador. |
+| `ToolExecution` | `DETECTED` o `INCONCLUSIVE` (ver notas comunes) | Medium / Medium o Low | El ejecutable se llama como una herramienta conocida. Incluye el contador y las últimas ejecuciones; su ruta se añade a las rutas de evidencia. |
+| `DetachedVolumeExecution` | `INCONCLUSIVE` | Medium / High | La última ejecución cae en el periodo y la ruta del ejecutable apunta a un volumen (`\VOLUME{...}`) que ya no está conectado o a una unidad extraíble. Ejecutar desde un USB y retirarlo no deja el archivo en el equipo, y BAM no registra esas ejecuciones. |
 | `JarOutsideMinecraft` | `INCONCLUSIVE` | Low / Medium | Java cargó un JAR desde Descargas, Escritorio, Documentos o Temp. |
-| `KeywordName` | `INCONCLUSIVE` | Low / Low | Ejecutable con palabra clave que no es Java ni launcher. |
+| `KeywordName` | `INCONCLUSIVE` | Low / Low | Ejecutable con palabra clave que no es Java, launcher ni herramienta conocida. |
 
 **Eventos:** cada ejecución registrada dentro del periodo (confianza alta). Los JAR referenciados se añaden a las rutas de evidencia (solo los que se tradujeron a una ruta local).
 
 **Privacidad:** los Prefetch no relevantes no se muestran; se informa cuántos se omitieron.
 
-## 06 Recycle Bin Forensics
+## BAM, PCA y ShimCache: reglas comunes
 
-**Administrador:** no.
+Los tres módulos de `modules\ExecutionArtifacts.psm1` leen registros de Windows sobre programas ejecutados y comparten estas reglas:
 
-**Lee:** `<unidad>:\$Recycle.Bin\<SID del usuario actual>` en cada unidad fija: los `$I` (metadatos) y los `$R` (contenido). Desde el menú, si hay privilegios de administrador y el USN Journal aún no se analizó, se ejecuta antes para poder cruzarlos.
+- **Relevancia** (`Get-AmonExecutableRelevance`), en este orden: el nombre coincide con un indicador concreto; es el nombre de una herramienta conocida (firma `filename`); el nombre contiene una palabra clave de un cliente; o la ruta contiene una palabra clave general de la revisión. Las palabras clave se comparan con una sola expresión regular por lista. Lo que no es relevante solo se cuenta ("N ... sin relación con la revisión se contaron pero no se muestran").
+- **Hallazgos por relevancia:** un indicador da `ExecutionEvidence` (en ShimCache, `ShimCacheEntry`) `DETECTED` (Medium / Medium); una herramienta conocida, `ToolExecution`; una palabra clave de un cliente, `KeywordName` (`INCONCLUSIVE`, Low / Low). Una palabra clave general solo hace que la entrada se muestre.
+- **Para revisar** (solo BAM y PCA): un ejecutable sin otra relevancia, ejecutado dentro del periodo desde Descargas, Escritorio, Documentos, `AppData\Local\Temp`, la raíz del perfil u otra unidad (`Test-AmonReviewLocation`), que no tiene firma Authenticode válida o ya no existe, genera un hallazgo `RecentUnsignedExecutable` "Ejecutado desde una carpeta de usuario" (`INFO`, Low / Low). Es información para el revisor: no cuenta para el resultado global. AppData (salvo Temp) queda fuera porque los programas que se actualizan solos (Discord, Roblox, launchers) dejan allí versiones antiguas que ya no existen. Los ejecutables de las herramientas de SS conocidas (`knownScreenshareTools`, de momento Ocean) no se listan para revisar.
 
-**Extrae de cada `$I`:** versión (1 o 2), tamaño declarado, fecha de eliminación y ruta original. **De su `$R`:** presencia, si es carpeta y su tamaño real (en carpetas, hasta 5000 archivos).
+## BAM (Background Activity Moderator)
 
-**Relevante si:** el nombre original coincide con un indicador, la ruta original contiene una palabra clave, estaba en una carpeta de una instancia de Minecraft o su extensión está en `interestingExtensions` (`.jar`, `.exe`, `.dll`, `.bat`, `.cmd`, `.ps1`, `.vbs`, `.pf` por defecto). Un comprimido o un log no es relevante solo por su extensión.
+**Tecla:** `M` > `9` (junto a PCA y ShimCache). **Administrador:** sí. Sin elevación devuelve `SIN ACCESO`.
 
-**Muestra:** la caja RECYCLE BIN ACTIVITY con el recuento por categoría y las 25 operaciones más recientes, y la tabla ELEMENTOS RELEVANTES EN LA PAPELERA (nombre original, fecha de eliminación, `$R` presente o ausente, incidencias y ruta original).
+**Lee:** `HKLM\SYSTEM\CurrentControlSet\Services\bam\State\UserSettings\<SID>` (o la ruta antigua `bam\UserSettings` si la primera no tiene valores), de todas las cuentas del equipo. Cada valor con nombre `\Device\HarddiskVolumeN\...` es un ejecutable; sus 8 primeros bytes son la última ejecución (FILETIME). Los demás valores (versión, aplicaciones empaquetadas) se ignoran.
 
-Categorías de RECYCLE BIN ACTIVITY:
+**Extrae:** SID, ruta traducida a letra de unidad, última ejecución, si el archivo existe todavía y su firma Authenticode (estado y firmante).
 
-| Categoría | Significado |
-| --- | --- |
-| Eliminación registrada | Un `$I` con fecha de eliminación dentro del periodo. |
-| Inconsistencia de metadatos | `$I` ilegible, tamaño declarado distinto del real, fecha nula, futura o distinta de la creación del `$I`, o `$R` sin `$I`. |
-| Archivo asociado ausente | Existe el `$I` pero no su `$R`. |
-| Actividad correlacionada | Cruce con el USN Journal (lo añade el motor de correlación, que rehace estas filas cada vez que correlaciona): envío confirmado por el journal, elemento enviado que ya no está en la papelera, eliminación definitiva o modificación del contenedor que coincide con purgas registradas. |
-| Evidencia insuficiente | Sin carpeta o sin acceso, papelera vacía con contenedor modificado, contenedor modificado después de la última eliminación, o ninguna operación en el periodo. |
+**Muestra:** la tabla EJECUTABLES RELEVANTES (última ejecución, firma o firmante, motivo y programa) y el recuento de no relacionados. Los indicadores, las herramientas y las palabras clave de clientes se muestran sea cual sea la fecha; las palabras clave generales y los ejecutables "para revisar", solo dentro del periodo.
 
-**Hallazgos:**
+**Hallazgos:** los de las reglas comunes (`ExecutionEvidence`, `ToolExecution`, `KeywordName` y `RecentUnsignedExecutable`).
 
-| Categoría | Estado | Severidad / confianza | Cuándo |
-| --- | --- | --- | --- |
-| `RelevantDeletion` | `DETECTED` | Medium si coincide con un indicador, una palabra clave o una carpeta de Minecraft; Low si solo por extensión / High | Elemento relevante enviado a la papelera dentro del periodo. |
-| `OrphanRecycleData` | `INCONCLUSIVE` | Low / Medium | Contenido `$R` sin su `$I`. |
+**Eventos:** "Última ejecución registrada en BAM" (confianza media) dentro del periodo. Los `.exe` y `.dll` mostrados que todavía existen se añaden a las rutas de evidencia.
 
-**Eventos:** archivo enviado a la papelera (confianza alta) y contenedor de la papelera modificado (confianza baja).
+**Privacidad:** BAM incluye las entradas de todas las cuentas del equipo; solo se muestran las relevantes.
 
-**Efectos:** los `$R` con extensión `.jar`, `.exe`, `.dll` o `.zip` se escanean con firmas en su sitio, sin restaurarlos.
+## PCA & MUICache
 
-**Privacidad:** los elementos no relevantes se cuentan por extensión y su ruta se sustituye por "(elemento no relacionado ..., ruta omitida por privacidad)", salvo que `privacy.showUnrelatedRecycleEntries` sea `true`. Nunca se restaura, mueve ni elimina nada, y nunca se afirma intención.
+**Tecla:** `M` > `9`. **Administrador:** no.
 
-## 07 NTFS / USN Journal
+**Lee:**
 
-**Administrador:** sí. Sin elevación devuelve `SIN ACCESO`.
+| Fuente | Formato | Qué aporta |
+| --- | --- | --- |
+| `C:\Windows\appcompat\pca\PcaAppLaunchDic.txt` | ANSI (1252), una línea `ruta\|AAAA-MM-DD HH:MM:SS.fff` por programa, hora en UTC | Última ejecución de los programas abiertos desde la interfaz gráfica. Existe desde Windows 11 22H2. |
+| `PcaGeneralDb0.txt` y `PcaGeneralDb1.txt` (misma carpeta) | UTF-16LE, 8 campos: hora, tipo, ruta, descripción, fabricante, versión, ProgramId y mensaje | Incidencias de compatibilidad: tipo 0 fallo del instalador, 1 driver bloqueado, 2 salida anormal del proceso, 3 resolución de PCA. Las rutas con variables (`%USERPROFILE%`) o sin letra de unidad se expanden. |
+| `HKCU\...\AppCompatFlags\Compatibility Assistant\Store` | Nombres de valor con la ruta | Programas lanzados alguna vez (sin fecha). |
+| `HKCU\Software\Classes\Local Settings\...\Shell\MuiCache` | Valores `<ruta>.FriendlyAppName` | Programas lanzados alguna vez (sin fecha). |
+| Memoria del `explorer.exe` del usuario actual | Trazas `TRACE,0000,0000,PcaClient,MonitorProcess,<ruta>,Time,<n>` | Programas lanzados desde que se abrió el Explorador, también si ya se borraron (sin hora). |
 
-**Lee:** el USN Journal (`$Extend\$UsnJrnl:$J`) de la unidad del sistema y de las unidades donde están las instancias (resolviendo junctions), con `FSCTL_QUERY_USN_JOURNAL` y `FSCTL_READ_USN_JOURNAL`, siempre en modo de lectura.
+Los archivos de PCA se leen compartiendo lectura y escritura porque PcaSvc los mantiene abiertos. De la memoria del Explorador solo se recorren las regiones privadas de lectura y escritura de los `explorer.exe` cuyo propietario es el usuario actual, y la función nativa `ExtractAfter` solo extrae el texto imprimible que sigue al marcador `,MonitorProcess,` hasta la siguiente coma (como mucho 520 caracteres, 5000 rutas, 2 GB y 45 s por proceso).
 
-**Filtra en C#** los registros del periodo (más 10 minutos) que sean finales (con `CLOSE` o `RENAME_OLD_NAME`) y cumplan alguna de estas condiciones: estar directamente en una carpeta de una instancia (`gameDir`, `mods`, `logs`, `versions`, `config`); empezar por `$I` o `$R`; ser `.jar`; ser `.pf`, `.exe`, `.bat`, `.cmd`, `.ps1` o `.vbs` borrado o renombrado (en todo el volumen); o contener una palabra clave o un indicador de al menos 4 caracteres. Un renombrado también pasa si su nombre anterior cumplía alguna condición.
+Fuentes de los formatos: aboutdfir, Sygnia y spokwn/pcasvc-executed (resumen con enlaces en [research/01-artefactos-windows.md](research/01-artefactos-windows.md)).
 
-La carpeta Prefetch no se vigila entera (cada programa que se abre actualiza su `.pf`), y los borrados de comprimidos (`.zip`, `.rar`, `.7z`), logs (`.log`, `.gz`) y DLL fuera de las carpetas de las instancias no se registran por su extensión: exponen nombres personales o son ruido de Windows Update. Los logs de Minecraft entran por las carpetas de las instancias. El filtro por carpeta compara la referencia NTFS del directorio padre de cada registro con la de esas carpetas (`GetFileReference`).
+**Muestra:** la tabla ENTRADAS RELEVANTES (fecha o "sin fecha", fuente, motivo y programa) y el recuento de no relacionadas.
 
-Hasta `maxUsnResults` registros por unidad: al alcanzarlo se conservan los **más recientes** y se descartan los más antiguos.
+**Selección:** en `PcaAppLaunchDic.txt`, como en BAM (palabras clave generales y "para revisar", solo dentro del periodo). En `PcaGeneralDb`, Store y MUICache solo cuentan los indicadores, las herramientas y las palabras clave de clientes. En las trazas del Explorador, además, los ejecutables "para revisar" (sin hora). Cada ruta genera un solo hallazgo de ejecución (`ExecutionEvidence`, `ToolExecution` o `KeywordName`) aunque aparezca en varias fuentes.
 
-**Extrae:** fecha, USN, nombre, ruta reconstruida con la ubicación **actual** del directorio padre (o solo el nombre si ya no existe) y su fiabilidad, operación (eliminación, renombrado anterior o nuevo, creación, modificación de datos, cambio de atributos o de seguridad), motivos, referencias de archivo, nombre y carpeta anteriores en los renombrados, y datos del journal (identificador, tamaño máximo, primer y último registro, total de registros).
+**Hallazgos:** los de las reglas comunes (`ExecutionEvidence`, `ToolExecution`, `KeywordName` y `RecentUnsignedExecutable`).
 
-**Muestra:** las tablas JOURNALS, ACTIVIDAD DE PAPELERA SEGÚN EL JOURNAL (envíos con nombre y carpeta originales, purgas y metadatos creados) y REGISTROS RELEVANTES.
+**Eventos:** "Última ejecución registrada por PCA" (confianza media) y "PCA: `<tipo>`" de `PcaGeneralDb`, dentro del periodo. Las rutas de `PcaAppLaunchDic.txt` mostradas que todavía existen se añaden a las rutas de evidencia.
 
-**Hallazgos:**
+**Limitaciones que informa:** líneas truncadas de `PcaAppLaunchDic.txt` (una ruta con caracteres no ANSI corta el registro y Windows puede dejar de anotar lanzamientos nuevos); sin `PcaAppLaunchDic.txt`, que el equipo no tiene los registros de texto de PCA; y que PCA solo registra programas abiertos desde la interfaz gráfica.
 
-| Categoría | Estado | Severidad / confianza | Cuándo |
-| --- | --- | --- | --- |
-| `IndicatorFileChange` | `DETECTED` | Medium / Medium (Low si solo se conoce el nombre) | Eliminación o renombrado de un archivo cuyo nombre coincide con un indicador. |
-| `RecycleUsn` | `DETECTED` | Low / High | Envío a la papelera de un `.jar`, `.exe`, `.dll` o de un nombre con palabra clave, con su eliminación definitiva si consta. |
-| `PrefetchDeleted` | `INCONCLUSIVE` | Low / Medium | Borrado de archivos `.pf`. Muestra los nombres de los relacionados con la revisión (palabra clave o indicador) y cuenta el resto como "N de programas no relacionados (nombres omitidos)". |
-| `MinecraftLogDeleted` | `INCONCLUSIVE` | Low / Medium | Borrado de logs de Minecraft o de launchers. |
-| `JournalRecent` | `INCONCLUSIVE` | Low / Low | El identificador del journal, leído como fecha, cae en el periodo y coincide con el registro más antiguo: el journal pudo crearse o recrearse hace poco. |
+## ShimCache (AppCompatCache)
 
-**Eventos:** cada registro relevante (`USN: <operación>`), con confianza media si la ruta está reconstruida y baja si solo se conoce el nombre.
+**Tecla:** `M` > `9`. **Administrador:** no.
 
-**Privacidad:** los renombrados a `$R` revelan el nombre original de cualquier archivo enviado a la papelera; ese nombre solo se conserva si es relevante (extensión de `interestingExtensions`, indicador o palabra clave) y se informa cuántos se ocultaron. Los registros de `.pf` de programas no relacionados no se muestran en la tabla ni en la línea temporal: sus borrados solo se cuentan en `PrefetchDeleted`. El resto del journal solo se cuenta. Nunca se modifica, trunca ni elimina el journal.
+**Lee:** el valor `AppCompatCache` de `HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\AppCompatCache` en el formato de Windows 10/11: cabecera de `0x34` bytes (también se acepta `0x30`) y entradas `10ts` con la ruta (UTF-16), la última modificación del archivo (FILETIME) y datos, de la más reciente a la más antigua. Las entradas sin ruta (aplicaciones empaquetadas) se omiten; un formato distinto hace fallar el módulo con un aviso.
 
-## 08 Recent & UserAssist
+**Muestra:** la tabla ENTRADAS RELEVANTES (posición en la caché, última modificación, si existe y archivo) y el recuento de no relacionadas, sea cual sea la fecha.
+
+**Hallazgos:** los de las reglas comunes, con `ShimCacheEntry` en lugar de `ExecutionEvidence` para los indicadores. No hay hallazgos "para revisar". La justificación recuerda que en Windows 10/11 ShimCache no prueba ejecución.
+
+**Eventos:** "Archivo registrado en ShimCache (última modificación)" (presencia, confianza baja) si la fecha de modificación cae en el periodo. Los `.exe`, `.jar` y `.dll` mostrados que todavía existen se añaden a las rutas de evidencia.
+
+**Limitaciones que informa:** ShimCache se guarda en el registro al apagar el equipo (lo ocurrido desde el último arranque no aparece) e indica que el sistema vio el archivo, no que se ejecutara.
+
+## Recent & UserAssist
+
+**Tecla:** `M` > `7` (Recent y después UserAssist).
 
 ### Recent Files
 
@@ -236,18 +276,22 @@ Hasta `maxUsnResults` registros por unidad: al alcanzarlo se conservan los **má
 
 **Eventos:** última ejecución registrada dentro del periodo. Los `.jar` y `.exe` que todavía existen se añaden a las rutas de evidencia (salvo los JAR dentro de `.minecraft`).
 
-## 09 Windows Event Analysis
+## Windows Event Analysis
 
-**Administrador:** parcial. Sin privilegios no se lee el registro de Seguridad y el módulo queda `PARCIAL`; System, Defender y las claves Run se leen por separado y cada fuente que falla se informa como advertencia. La pantalla de alcance del escaneo completo lo indica como "sin administrador: solo System, Defender y claves Run (PARCIAL)".
+**Tecla:** `M` > `8`. **Administrador:** parcial. Sin privilegios no se lee el registro de Seguridad y el módulo queda `PARCIAL`; el resto de fuentes se leen por separado y cada una que falla se informa como advertencia.
 
 **Lee:**
 
 | Fuente | Qué |
 | --- | --- |
-| Security 4688 | Creación de procesos del periodo (hasta 30000): proceso, línea de comandos, proceso padre y usuario. |
-| Security 1102 | Los 50 borrados del registro de Seguridad más recientes, con la cuenta. |
+| Security 4688 | Creación de procesos del periodo (hasta 30000): proceso, línea de comandos, proceso padre y usuario. Requiere administrador. |
+| Security 1102 | Los 50 borrados del registro de Seguridad más recientes, con la cuenta. Requiere administrador. |
 | System 104 | Los 50 borrados de otros registros más recientes (proveedor `Microsoft-Windows-Eventlog`), con el canal y la cuenta. |
+| System 7045 | Servicios y drivers instalados en el periodo (proveedor `Service Control Manager`, hasta 500): nombre, binario, tipo e inicio. |
+| Ntfs/Operational 501 | USN Journal eliminado en el periodo (hasta 2000): proceso, volumen e identificador del journal. |
 | Defender 1116/1117 | Detecciones del periodo (hasta 500): amenaza, ruta y acción. |
+| Defender 5001/5007 | Protección en tiempo real desactivada y cambios de configuración del periodo (hasta 500). |
+| Application 1000 | Cierres por error del periodo (proveedor `Application Error`, hasta 500): aplicación, módulo culpable y código de excepción. |
 | Auditoría | Si la subcategoría "Creación del proceso" está habilitada (`AuditQuerySystemPolicy`) y si incluye la línea de comandos (`ProcessCreationIncludeCmdLine_Enabled`). |
 | Claves Run | `Run` y `RunOnce` de HKCU y HKLM, y `Run` de `WOW6432Node`. |
 
@@ -260,45 +304,158 @@ Hasta `maxUsnResults` registros por unidad: al alcanzarlo se conservan los **má
 | `ExecutionEvidence` | `DETECTED` | Medium / High | Un 4688 relacionado por nombre o línea de comandos con un indicador. Evidencia de ejecución. |
 | `SecurityLogCleared` | `DETECTED` dentro del periodo, `INFO` fuera | Medium (Info) / High | Evento 1102. No tiene relación con la papelera de reciclaje. |
 | `EventLogCleared` | `DETECTED` | Low / High | Evento 104 dentro del periodo. |
+| `DriverInstalled` | `INCONCLUSIVE` | Medium / Medium | Evento 7045 cuyo binario está en una carpeta de usuario u otra unidad, o cuyo nombre o ruta contiene un indicador o una palabra clave de un cliente. El binario se añade a las rutas de evidencia (la pasada de firmas solo escanea `.jar`, `.exe`, `.dll` y `.zip`). |
+| `ScreenshareTool` | `INFO` | Info / High | Evento 7045 que coincide con `knownScreenshareTools` ("Driver de la herramienta de SS"): rastro del propio staff, no del jugador. |
+| `UsnJournalDeleted` | `DETECTED` | High / High | Evento 501 dentro del periodo de un proceso que no es SearchIndexer (que lo registra a menudo sin borrar nada). |
 | `DefenderDetection` | `DETECTED` | Medium / High | Detección de Defender relacionada con la revisión (palabra clave, indicador o ruta `.jar`). |
+| `DefenderExclusion` | `INCONCLUSIVE` | Medium / High | Evento 5007 que añade una exclusión de ruta, proceso o extensión. |
+| `DefenderDisabled` | `INCONCLUSIVE` | Low / High | Evento 5001: se desactivó la protección en tiempo real. |
+| `JavaCrashForeignModule` | `INCONCLUSIVE` | Medium / Medium | Evento 1000 de un proceso de `launcherProcessNames` cuyo módulo culpable no está en Windows, Program Files ni en la carpeta del propio runtime. La DLL se añade a las rutas de evidencia. |
 | `AutorunRelated` | `INCONCLUSIVE` | Low / Low | Una entrada Run contiene un indicador o una palabra clave de un cliente. Los launchers que arrancan con Windows solo se listan. |
 | `KeywordName` | `INCONCLUSIVE` | Low / Low | Un 4688 cuyo proceso contiene una palabra clave de un cliente. |
 
-**Eventos:** proceso creado (4688), registro de Seguridad borrado (1102), registro de eventos borrado (104) y detección de Windows Defender.
+**Eventos:** proceso creado (4688), registro de Seguridad borrado (1102), registro de eventos borrado (104), servicio o driver instalado (7045), USN Journal eliminado (501), detección de Windows Defender, exclusión añadida a Defender, protección en tiempo real desactivada y cierre por error de Java o de un launcher (1000).
 
-**Privacidad:** de los 4688 solo se muestran los relacionados con Java, launchers, palabras clave o indicadores, y sus líneas de comandos pasan por la ocultación de secretos. Las entradas de inicio automático se listan todas en la vista, con su motivo de relevancia. No modifica el registro, la auditoría ni los registros de eventos.
+**Privacidad:** de los 4688 solo se muestran los relacionados con Java, launchers, palabras clave o indicadores, y sus líneas de comandos pasan por la ocultación de secretos. De los 7045, solo los que cumplen las condiciones de `DriverInstalled`. Las entradas de inicio automático se listan todas en la vista, con su motivo de relevancia. No modifica el registro, la auditoría ni los registros de eventos.
+
+## Bypass & Tamper Check
+
+**Tecla:** `M` > `B`. **Administrador:** no.
+
+**Lee:**
+
+- El estado, el tipo de inicio y el proceso que aloja los servicios que alimentan los artefactos forenses: SysMain (mantiene los Prefetch), PcaSvc (PCA), DPS (su memoria guarda rastros de programas ejecutados), EventLog (registros de eventos) y el controlador `bam` (BAM). La instantánea hace 3 consultas CIM: todos los servicios (`Win32_Service`), el controlador `bam` (`Win32_SystemDriver`) y los procesos que alojan los servicios forenses (`Win32_Process`). La hora del último arranque sale de `Win32_OperatingSystem`.
+- Del registro System dentro del periodo: los eventos 7040 (cambio del tipo de inicio) y 7031/7034 (caída) de esos servicios, del proveedor `Service Control Manager`, y los cambios de hora (proveedor `Microsoft-Windows-Kernel-General`, id 1), con la hora nueva, la anterior, la diferencia y el programa que la cambió. El evento 7036 (cambio de estado) no se usa porque Windows 11 ya no lo registra (comprobado en la build 26200).
+
+**Muestra:** la tabla SERVICIOS FORENSES (servicio, estado, tipo de inicio y desde cuándo corre su proceso) y la hora del último arranque.
+
+**Hallazgos:**
+
+| Categoría | Estado | Severidad / confianza | Cuándo |
+| --- | --- | --- | --- |
+| `ServiceDisabled` | `INCONCLUSIVE` | Low (Medium para EventLog y `bam`) / Low | El servicio está deshabilitado o no está en ejecución. Muchos programas y guías de "optimización" desactivan SysMain o PcaSvc. |
+| `ServiceRestarted` | `INCONCLUSIVE` | Low (Medium para EventLog y `bam`) / Low | El proceso que aloja el servicio arrancó más de 10 minutos después que Windows (solo si ese proceso no aloja otros servicios). Reiniciarlo borra lo que tenía en memoria. |
+| `ServiceStartTypeChanged` | `DETECTED` | Medium / Medium | Evento 7040 dentro del periodo. |
+| `ServiceCrashed` | `INCONCLUSIVE` | Low / Low | Evento 7031 o 7034 dentro del periodo: terminar el proceso del servicio es una forma de borrar su memoria. |
+| `SystemTimeChanged` | `DETECTED` | Medium / High | Cambio de la hora del sistema de 2 minutos o más dentro del periodo, con el programa que lo hizo (las correcciones de sincronización son de milisegundos y se omiten). Mover la hora hace que lo ejecutado parezca de otro momento. |
+
+**Eventos:** servicio reiniciado (si cae en el periodo), tipo de inicio cambiado y hora del sistema cambiada.
+
+**Limitaciones que informa:** un servicio detenido o reiniciado, o un cambio de hora, no prueban trampas: indican que los rastros de Windows pueden estar incompletos.
 
 ## Temp Indicator Sweep (escaneo completo)
 
-No tiene opción propia en el menú: se ejecuta dentro del escaneo completo (`Temp` en `modules` o en `-Modules`) o con `-Scan Temp`.
+No tiene tecla propia: se ejecuta dentro del escaneo completo (`Temp` en `modules` o en `-Modules`) o con `-Scan Temp`.
 
 **Administrador:** no.
 
-**Lee:** `%TEMP%`, hasta 3 niveles y `maxTempFiles` archivos, solo `*.jar`, `*.exe`, `*.dll` y `*.zip`, y **solo si** ya hay un nombre de archivo o un SHA-256 concreto registrado como indicador, es decir, si el escáner de firmas tuvo alguna detección `DETECTED`. Si no, devuelve `OMITIDO`. Por eso `-Scan Temp` ejecuta antes Minecraft y Signatures.
+**Lee:**
 
-**Hallazgos:** `TempIndicator`: `DETECTED` (Medium / High) si coincide el SHA-256, o `INCONCLUSIVE` (Low / Low) si solo coincide el nombre; en ese caso el archivo se añade a la pasada de firmas.
+1. **Siempre, y solo por nombre:** `JNativeHook*.dll` en el primer nivel de `%TEMP%`. La versión 2.1 de JNativeHook extrae ahí `JNativeHook-<versión o SHA-1>.<arquitectura>.dll` cuando un programa Java instala un gancho global de teclado y ratón (fuente: `DefaultLibraryLocator` de [kwhat/jnativehook](https://github.com/kwhat/jnativehook), rama 2.1). Minecraft no la usa.
+2. **Solo si** ya hay un nombre de archivo o un SHA-256 concreto registrado como indicador, es decir, si el escáner de firmas tuvo alguna detección `DETECTED`: `%TEMP%` hasta 3 niveles y `maxTempFiles` archivos, solo `*.jar`, `*.exe`, `*.dll` y `*.zip`. Por eso `-Scan Temp` ejecuta antes Minecraft y Signatures. Sin indicadores, el módulo termina con la limitación "en Temp solo se buscó JNativeHook (privacidad)".
 
-**Eventos:** archivo relacionado en Temp creado o modificado.
+**Hallazgos:**
 
-## 10 Forensic Timeline
+| Categoría | Estado | Severidad / confianza | Cuándo |
+| --- | --- | --- | --- |
+| `GlobalInputHook` | `INCONCLUSIVE` | Medium / Medium | Existe la DLL de JNativeHook en Temp (con sus fechas de creación y modificación). |
+| `TempIndicator` | `DETECTED` si coincide el SHA-256, `INCONCLUSIVE` si solo coincide el nombre | Medium / High, o Low / Low | Copia de un archivo señalado. Si solo coincide el nombre, el archivo se añade a la pasada de firmas. |
 
-Reúne los eventos de todos los módulos de la sesión, filtra el intervalo, elimina duplicados (mismo segundo, tipo y ruta) y los ordena. Cada fila tiene fecha, hora local, desplazamiento UTC, tipo, fuente, módulo, ruta, indicador, confianza y descripción, y se resalta si el archivo coincide con un indicador o el evento lleva uno. No interpola ni inventa horas. Ver [COMMANDS.md](COMMANDS.md#línea-temporal-10).
+**Eventos:** DLL de JNativeHook creada o modificada y archivo relacionado en Temp creado o modificado, dentro del periodo.
+
+## Recycle Bin Forensics
+
+**Tecla:** `M` > `5`. **Administrador:** no.
+
+**Lee:** `<unidad>:\$Recycle.Bin\<SID del usuario actual>` en cada unidad fija: los `$I` (metadatos) y los `$R` (contenido). Desde `M` > `5`, si hay privilegios de administrador y el USN Journal aún no se analizó, se ejecuta antes para poder cruzarlos.
+
+**Extrae de cada `$I`:** versión (1 o 2), tamaño declarado, fecha de eliminación y ruta original. **De su `$R`:** presencia, si es carpeta y su tamaño real (en carpetas, hasta 5000 archivos).
+
+**Relevante si:** el nombre original coincide con un indicador, la ruta original contiene una palabra clave, estaba en una carpeta de una instancia de Minecraft o su extensión está en `interestingExtensions` (`.jar`, `.exe`, `.dll`, `.bat`, `.cmd`, `.ps1`, `.vbs`, `.pf` por defecto). Un comprimido o un log no es relevante solo por su extensión.
+
+**Muestra:** la caja RECYCLE BIN ACTIVITY con el recuento por categoría y las 25 operaciones más recientes, y la tabla ELEMENTOS RELEVANTES EN LA PAPELERA (nombre original, fecha de eliminación, `$R` presente o ausente, incidencias y ruta original).
+
+Categorías de RECYCLE BIN ACTIVITY:
+
+| Categoría | Significado |
+| --- | --- |
+| Eliminación registrada | Un `$I` con fecha de eliminación dentro del periodo. |
+| Inconsistencia de metadatos | `$I` ilegible, tamaño declarado distinto del real, fecha nula, futura o distinta de la creación del `$I`, o `$R` sin `$I`. |
+| Archivo asociado ausente | Existe el `$I` pero no su `$R`. |
+| Actividad correlacionada | Cruce con el USN Journal (lo añade el motor de correlación, que rehace estas filas cada vez que correlaciona): envío confirmado por el journal, elemento enviado que ya no está en la papelera, eliminación definitiva o modificación del contenedor que coincide con purgas registradas. |
+| Evidencia insuficiente | Sin carpeta o sin acceso, papelera vacía con contenedor modificado, contenedor modificado después de la última eliminación, o ninguna operación en el periodo. |
+
+**Hallazgos:**
+
+| Categoría | Estado | Severidad / confianza | Cuándo |
+| --- | --- | --- | --- |
+| `RelevantDeletion` | `DETECTED` | Medium si coincide con un indicador, una palabra clave o una carpeta de Minecraft; Low si solo por extensión / High | Elemento relevante enviado a la papelera dentro del periodo. |
+| `OrphanRecycleData` | `INCONCLUSIVE` | Low / Medium | Contenido `$R` sin su `$I`. |
+
+**Eventos:** archivo enviado a la papelera (confianza alta) y contenedor de la papelera modificado (confianza baja).
+
+**Efectos:** los `$R` con extensión `.jar`, `.exe`, `.dll` o `.zip` se escanean con firmas en su sitio, sin restaurarlos.
+
+**Privacidad:** los elementos no relevantes se cuentan por extensión y su ruta se sustituye por "(elemento no relacionado ..., ruta omitida por privacidad)", salvo que `privacy.showUnrelatedRecycleEntries` sea `true`. Nunca se restaura, mueve ni elimina nada, y nunca se afirma intención.
+
+## NTFS / USN Journal
+
+**Tecla:** `M` > `6`. **Administrador:** sí. Sin elevación devuelve `SIN ACCESO`.
+
+**Lee:** el USN Journal (`$Extend\$UsnJrnl:$J`) de la unidad del sistema y de las unidades donde están las instancias (resolviendo junctions), con `FSCTL_QUERY_USN_JOURNAL` y `FSCTL_READ_USN_JOURNAL`, siempre en modo de lectura.
+
+**Filtra en C#** los registros del periodo (más 10 minutos) que sean finales (con `CLOSE` o `RENAME_OLD_NAME`) y cumplan alguna de estas condiciones: estar directamente en una carpeta de una instancia (`gameDir`, `mods`, `logs`, `versions`, `config`); empezar por `$I` o `$R`; ser `.jar`; ser `.pf`, `.exe`, `.bat`, `.cmd`, `.ps1` o `.vbs` borrado o renombrado (en todo el volumen); o contener una palabra clave o un indicador de al menos 4 caracteres. Un renombrado también pasa si su nombre anterior cumplía alguna condición.
+
+La carpeta Prefetch no se vigila entera (cada programa que se abre actualiza su `.pf`), y los borrados de comprimidos (`.zip`, `.rar`, `.7z`), logs (`.log`, `.gz`) y DLL fuera de las carpetas de las instancias no se registran por su extensión: exponen nombres personales o son ruido de Windows Update. Los logs de Minecraft entran por las carpetas de las instancias. El filtro por carpeta compara la referencia NTFS del directorio padre de cada registro con la de esas carpetas (`GetFileReference`).
+
+Hasta `maxUsnResults` registros por unidad: al alcanzarlo se conservan los **más recientes** y se descartan los más antiguos.
+
+**Extrae:** fecha, USN, nombre, ruta reconstruida con la ubicación **actual** del directorio padre (o solo el nombre si ya no existe) y su fiabilidad, operación (eliminación, renombrado anterior o nuevo, creación, modificación de datos, cambio de atributos o de seguridad), motivos, referencias de archivo, nombre y carpeta anteriores en los renombrados, y datos del journal (identificador, tamaño máximo, primer y último registro, total de registros).
+
+**Muestra:** las tablas JOURNALS, ACTIVIDAD DE PAPELERA SEGÚN EL JOURNAL (envíos con nombre y carpeta originales, purgas y metadatos creados) y REGISTROS RELEVANTES.
+
+**Hallazgos:**
+
+| Categoría | Estado | Severidad / confianza | Cuándo |
+| --- | --- | --- | --- |
+| `IndicatorFileChange` | `DETECTED` | Medium / Medium (Low si solo se conoce el nombre) | Eliminación o renombrado de un archivo cuyo nombre coincide con un indicador. |
+| `RecycleUsn` | `DETECTED` | Low / High | Envío a la papelera de un `.jar`, `.exe`, `.dll` o de un nombre con palabra clave, con su eliminación definitiva si consta. |
+| `PrefetchDeleted` | `INCONCLUSIVE` | Low / Medium | Borrado de archivos `.pf`. Muestra los nombres de los relacionados con la revisión (palabra clave o indicador) y cuenta el resto como "N de programas no relacionados (nombres omitidos)". |
+| `MinecraftLogDeleted` | `INCONCLUSIVE` | Low / Medium | Borrado de logs de Minecraft o de launchers. |
+| `JournalRecent` | `INCONCLUSIVE` | Low / Low | El identificador del journal, leído como fecha, cae en el periodo y coincide con el registro más antiguo: el journal pudo crearse o recrearse hace poco. |
+
+**Eventos:** cada registro relevante (`USN: <operación>`), con confianza media si la ruta está reconstruida y baja si solo se conoce el nombre.
+
+**Privacidad:** los renombrados a `$R` revelan el nombre original de cualquier archivo enviado a la papelera; ese nombre solo se conserva si es relevante (extensión de `interestingExtensions`, indicador o palabra clave) y se informa cuántos se ocultaron. Los registros de `.pf` de programas no relacionados no se muestran en la tabla ni en la línea temporal: sus borrados solo se cuentan en `PrefetchDeleted`. El resto del journal solo se cuenta. Nunca se modifica, trunca ni elimina el journal.
+
+## Forensic Timeline
+
+**Tecla:** `T` en el menú final.
+
+Reúne los eventos de todos los módulos de la sesión, filtra el periodo de la revisión, elimina duplicados (mismo segundo, tipo y ruta) y los ordena. Cada fila tiene fecha, hora local, desplazamiento UTC, tipo, fuente, módulo, ruta, indicador, confianza y descripción, y se resalta si el archivo coincide con un indicador o el evento lleva uno. No interpola ni inventa horas. Ver [COMMANDS.md](COMMANDS.md#menú-final).
 
 ## Detection & Correlation Engine
 
 Se ejecuta al final del escaneo completo, después de cada módulo suelto y al exportar. No lee artefactos: trabaja con los hallazgos, los eventos y la tabla de mods.
 
-- **Por cliente:** reúne los hallazgos del cliente y, para cada ancla con ruta, los hallazgos de otros módulos con la misma ruta, el mismo nombre de archivo o el mismo SHA-256, los eventos de otros módulos sobre el mismo nombre de archivo (ejecución, borrado, renombrado, presencia o carga) y los mods de la misma ruta que los logs marcan como cargados. Si hay al menos un ancla `DETECTED` y dos tipos de fuente distintos, crea un hallazgo `ClientCorrelation` (`CORRELATED`). Confianza alta solo si el ancla es de confianza alta; si no, media. Severidad baja para `dual-use`.
+- **Anclas:** los hallazgos `DETECTED` o `INCONCLUSIVE` de un cliente de las categorías `CheatSignature`, `ClientLog`, `ClientConfig`, `ClientVersionProfile`, `ClientProcess`, `ClientMemory`, `ExecutionEvidence`, `ShimCacheEntry` y `ToolExecution`. Los `KeywordName` nunca son ancla ni fuente.
+- **Por cliente:** reúne los hallazgos del cliente y, para cada ancla con ruta, los hallazgos de otros módulos con la misma ruta, el mismo nombre de archivo o el mismo SHA-256, los eventos de otros módulos sobre el mismo nombre de archivo (ejecución, borrado, renombrado, presencia o carga) y los mods de la misma ruta que los logs marcan como cargados. Si hay al menos un ancla `DETECTED` y dos tipos de fuente distintos, crea un hallazgo `ClientCorrelation` (`CORRELATED`). Confianza alta solo si el ancla es de confianza alta; si no, media. Severidad baja para `dual-use`. Así, un JAR con firma y las mismas firmas en la memoria de Java, o el nombre de una herramienta en Prefetch y en BAM, se correlacionan.
+- **Evidencia de ejecución:** de los hallazgos relacionados por ruta, nombre o hash cuentan como ejecución los de los logs de Minecraft, Prefetch, BAM, PCA, UserAssist, los eventos de Windows, los procesos en ejecución, Recent y la memoria de Java (no los de ShimCache ni los del módulo de evasión); de los hallazgos del propio cliente, los marcados como ejecución (`ClientLog`, `ClientProcess`, `ClientMemory` y `ToolExecution`).
 - **Nombres genéricos:** si el archivo del ancla tiene un nombre que comparten todas las instalaciones (`java.exe`, `javaw.exe`, `javaws.exe`, `jp2launcher.exe`, `latest.log`, `debug.log`, `client.jar`, `minecraft.jar`, `launcher_profiles.json`, `options.txt`, `minecraftlauncher.exe`, `minecraft.exe`, cualquier `.log` o `.log.gz`, o un JAR de versión como `1.20.1.jar`), no se relaciona nada por nombre ni por ruta: solo vale el mismo SHA-256.
 - **Tipo de fuente:** sale del módulo que produjo el hallazgo o el evento, no del texto de su fuente. Así, el USN Journal de varias unidades es una sola fuente, y la "Sesión de Minecraft" de un log cuenta como el propio log (no como segunda fuente de un `ClientLog` de ese log).
 - **Por archivo sin cliente:** si dos o más fuentes registran actividad sobre el mismo `.jar`, `.exe` o `.dll` (que no tenga un nombre genérico) y al menos una es `DETECTED`, crea `FileActivityCorrelation` (`CORRELATED`, Low / Medium), que describe actividad sin identificar software.
 - **Papelera y USN Journal:** añade la "Actividad correlacionada" a RECYCLE BIN ACTIVITY. Las filas se rehacen en cada correlación, así que no se duplican aunque la correlación se repita.
-- **Veredicto por cliente:** `CORRELATED`, `DETECTED`, `INCONCLUSIVE` o `NOT DETECTED`, con justificación y confianza, y una conclusión para revisión humana que nombra los clientes con evidencias, las herramientas de uso dual, los módulos sin acceso y los clientes sin firmas verificables.
+- **Veredicto por cliente:** `CORRELATED`, `DETECTED`, `INCONCLUSIVE`, `NOT COVERED` (el cliente no tiene indicadores en sus firmas y no hay hallazgos suyos) o `NOT DETECTED`, con justificación y confianza, y una conclusión para revisión humana que nombra los clientes con evidencias, las herramientas de uso dual, los módulos sin acceso y la cobertura (clientes sin firmas verificables). `Summary` cuenta los clientes de cada estado, incluido `NotCovered`.
+- **Resultado global** (`Outcome`): `INDICADORES ENCONTRADOS` si algún cliente que no es `dual-use` está `CORRELATED` o `DETECTED` o hay algún hallazgo `DETECTED` sin cliente; si no, `REVISAR A MANO` si hay algún hallazgo `INCONCLUSIVE`; si no, `SIN INDICADORES`. Los `INFO` no cuentan.
 
-## 11 Evidence Reports
+## Evidence Reports
 
-Exporta el modelo de la sesión en TXT, JSON y HTML con el manifiesto `<id>.sha256`, y verifica manifiestos. Contenido del reporte: identificador, herramienta y versión, fechas, zona horaria, periodo, equipo, usuario de Windows, SID, privilegios y sistema operativo, alcance autorizado, módulos con estado y duración, módulos sin acceso, veredicto por cliente, hallazgos con evidencias y falsos positivos, archivos analizados con firmas, datos de Minecraft (instancias, sesiones, versiones y mods), RECYCLE BIN ACTIVITY, línea temporal, advertencias, limitaciones y conclusión. El TXT elimina de los datos los caracteres de control y los saltos de línea incrustados (un artefacto no puede falsificar líneas del reporte) y el HTML escapa todos los valores. Ver [README](../README.md#reportes-e-integridad).
+**Teclas:** la revisión automática exporta sola; `M` > `E` exporta de nuevo y `M` > `V` verifica un manifiesto.
 
-## 12 Settings
+Exporta el modelo de la sesión en TXT, JSON y HTML con el manifiesto `<id>.sha256`, y verifica manifiestos. Contenido del reporte: identificador, herramienta y versión, fechas, zona horaria, periodo, equipo, usuario de Windows, SID, privilegios y sistema operativo, resultado global, alcance autorizado (con la constancia de la revisión), módulos con estado y duración, módulos sin acceso, veredicto por cliente (tabla de los clientes con algún indicio y líneas aparte para los clientes sin indicadores y los `NOT COVERED`), hallazgos con evidencias y falsos positivos, archivos analizados con firmas, datos de Minecraft (instancias, sesiones, versiones y mods), RECYCLE BIN ACTIVITY, línea temporal, advertencias, limitaciones y conclusión. El TXT elimina de los datos los caracteres de control y los saltos de línea incrustados (un artefacto no puede falsificar líneas del reporte) y el HTML escapa todos los valores. Ver [README](../README.md#reportes-e-integridad).
 
-Tema, glifos, periodo por defecto, carpeta y formatos de reporte, animaciones, rutas extra de instancia y búsqueda de actualizaciones verificadas (el repositorio se valida antes de guardarse y una etiqueta que no sea un número de versión no se ofrece para instalar). Ver [COMMANDS.md](COMMANDS.md#submenú-settings-12) e [INSTALL.md](INSTALL.md#actualizar).
+## Ajustes
+
+**Tecla:** `M` > `S`.
+
+Tema, glifos, periodo por defecto, carpeta de reportes, animaciones, rutas extra de instancia y búsqueda de actualizaciones verificadas (el repositorio se valida antes de guardarse y una etiqueta que no sea un número de versión no se ofrece para instalar). Ver [COMMANDS.md](COMMANDS.md#ajustes-s) e [INSTALL.md](INSTALL.md#actualizar).

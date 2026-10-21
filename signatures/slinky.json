@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "slinky",
+  "name": "Slinky",
+  "category": "cheat-client",
+  "description": "Cliente de trampas.",
+  "openSource": false,
+  "loaders": [],
+  "references": [],
+  "keywords": ["slinky"],
+  "falsePositives": [],
+  "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+  "indicators": [
+    { "id": "slinky.path.1", "type": "path", "value": ".slinky/bin", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://docs.slinky.gg/basics/get-started/", "note": "La documentación oficial pide excluir del antivirus 'The %USERPROFILE%\\.slinky\\bin folder'.", "relativeTo": "userHome" },
+    { "id": "slinky.config.1", "type": "config", "value": ".slinky", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://docs.slinky.gg/basics/linux/", "note": "Guía oficial de Linux: 'exempt the Slinky data directory ... --filesystem=~/.slinky'.", "relativeTo": "userHome" },
+    { "id": "slinky.string.1", "type": "string", "value": "slinkyhook.dll", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/spokwn/BAM-parser/HEAD/yara/yara.cpp", "note": "YARA 'Specifics A' ($c); también zeezy MemoryScanner.cpp línea 266.", "encodings": ["ascii", "utf16le"], "scopes": ["raw"] },
+    { "id": "slinky.string.2", "type": "string", "value": "slinky_library.dll", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/spokwn/BAM-parser/HEAD/yara/yara.cpp", "note": "YARA 'Specifics A' ($d).", "encodings": ["ascii", "utf16le"], "scopes": ["raw"] },
+    { "id": "slinky.string.3", "type": "string", "value": "slinkyhooks.class", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/zeezyexe/zeezy-cheat-scanner/HEAD/src/scanner/MemoryScanner.cpp", "note": "Línea 267.", "scopes": ["raw", "entries"] },
+    { "id": "slinky.string.4", "type": "string", "value": "slinkware", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/spokwn/BAM-parser/HEAD/BAM/BAM.cpp", "note": "Firmante marcado como 'Cheat Signature' (línea 145) sin etiqueta de cliente; atribución a Slinky inferida por el nombre.", "encodings": ["ascii"], "scopes": ["raw"] },
+    { "id": "slinky.string.5", "type": "string", "value": "slinky.gg", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/spokwn/BAM-parser/HEAD/yara/yara.cpp", "note": "Dominio oficial; solo apoyo.", "encodings": ["ascii", "utf16le"], "scopes": ["raw"] }
+  ]
+}

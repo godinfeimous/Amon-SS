@@ -9,7 +9,8 @@ Import-Module (Join-Path $PSScriptRoot 'UI.psm1') -DisableNameChecking
 Import-Module (Join-Path $PSScriptRoot 'Core.psm1') -DisableNameChecking
 Import-Module (Join-Path $PSScriptRoot 'Timeline.psm1') -DisableNameChecking
 
-$script:StatusToken = @{ 'CORRELATED' = 'finding'; 'DETECTED' = 'finding'; 'INCONCLUSIVE' = 'warning'; 'NOT DETECTED' = 'success'; 'INFO' = 'secondary' }
+$script:StatusToken = @{ 'CORRELATED' = 'finding'; 'DETECTED' = 'finding'; 'INCONCLUSIVE' = 'warning'; 'NOT DETECTED' = 'success'; 'NOT COVERED' = 'muted'; 'INFO' = 'secondary' }
+$script:OutcomeState = @{ 'INDICADORES ENCONTRADOS' = 'Error'; 'REVISAR A MANO' = 'Warn'; 'SIN INDICADORES' = 'Ok' }
 $script:ModuleState = @{ Completed = 'Ok'; Partial = 'Warn'; NoAccess = 'Warn'; Skipped = 'Skip'; Failed = 'Error'; Cancelled = 'Warn' }
 $script:ModuleStateEs = @{ Completed = 'COMPLETADO'; Partial = 'PARCIAL'; NoAccess = 'SIN ACCESO'; Skipped = 'OMITIDO'; Failed = 'ERROR'; Cancelled = 'CANCELADO' }
 $script:ConfEs = @{ High = 'Alta'; Medium = 'Media'; Low = 'Baja' }
@@ -277,6 +278,77 @@ function Show-AmonEventView {
     Show-AmonModuleNotes -Result $Result
 }
 
+function Show-AmonMemoryView {
+    param([Parameter(Mandatory = $true)]$Result, $Context)
+    Write-AmonSection -Title 'JAVA MEMORY SCANNER' -Subtitle 'Firmas de clientes cargadas ahora mismo en Minecraft (también inyectados sin JAR en disco).'
+    Write-AmonTable -Title 'PROCESOS ESCANEADOS' -Rows @($Result.Artifacts) -Columns @(
+        @{ Header = 'PROCESO'; Property = 'Name' },
+        @{ Header = 'PID'; Property = 'ProcessId'; Align = 'Right' },
+        @{ Header = 'MB'; Property = 'ScannedMB'; Align = 'Right' },
+        @{ Header = 'FIRMAS'; Property = 'Matches'; Align = 'Right'; Token = { param($r) if ($r.Matches) { 'finding' } else { 'success' } } },
+        @{ Header = 'RUTA'; Property = 'Path'; IsPath = $true }
+    ) -EmptyText 'No había Minecraft (Java) en ejecución.'
+    Show-AmonFindingList -Findings @($Result.Findings)
+    Show-AmonModuleNotes -Result $Result
+}
+
+function Show-AmonBamView {
+    param([Parameter(Mandatory = $true)]$Result, $Context)
+    Write-AmonSection -Title 'BAM' -Subtitle 'Última ejecución de cada programa según Windows (Background Activity Moderator).'
+    if ($Result.Status -eq 'NoAccess') { Show-AmonModuleNotes -Result $Result; return }
+    Write-AmonTable -Title 'EJECUTABLES RELEVANTES' -MaxRows (Get-AmonMaxRows $Context) -Rows @($Result.Artifacts | Sort-Object LastRunUtc -Descending) -Columns @(
+        @{ Header = 'ÚLTIMA EJECUCIÓN'; Property = { param($r) if ($r.LastRunUtc) { $r.LastRunUtc.ToLocalTime().ToString('yyyy-MM-dd HH:mm') } } },
+        @{ Header = 'FIRMA'; Property = { param($r) if ($r.Signer) { $r.Signer } else { $r.Signature } }; Token = { param($r) if ($r.Signature -eq 'Valid') { 'success' } else { 'warning' } } },
+        @{ Header = 'MOTIVO'; Property = 'Relevance' },
+        @{ Header = 'PROGRAMA'; Property = 'Path'; IsPath = $true }
+    ) -EmptyText 'Ningún ejecutable relevante en el periodo.'
+    if ($Result.Data['UnrelatedCount']) { Write-AmonStatus -Label 'No relacionados' -Value ([string]$Result.Data['UnrelatedCount']) -State Info -Detail 'contados, no mostrados' }
+    Show-AmonFindingList -Findings @($Result.Findings)
+    Show-AmonModuleNotes -Result $Result
+}
+
+function Show-AmonPcaView {
+    param([Parameter(Mandatory = $true)]$Result, $Context)
+    Write-AmonSection -Title 'PCA & MUICACHE' -Subtitle 'Programas abiertos desde la interfaz gráfica de Windows (PCA de Windows 11, Store y MUICache).'
+    Write-AmonTable -Title 'ENTRADAS RELEVANTES' -MaxRows (Get-AmonMaxRows $Context) -Rows @($Result.Artifacts | Sort-Object { if ($_.TimestampUtc) { $_.TimestampUtc } else { [datetime]::MinValue } } -Descending) -Columns @(
+        @{ Header = 'FECHA'; Property = { param($r) if ($r.TimestampUtc) { $r.TimestampUtc.ToLocalTime().ToString('yyyy-MM-dd HH:mm') } else { 'sin fecha' } } },
+        @{ Header = 'FUENTE'; Property = 'Source' },
+        @{ Header = 'MOTIVO'; Property = 'Relevance' },
+        @{ Header = 'PROGRAMA'; Property = 'Path'; IsPath = $true }
+    ) -EmptyText 'Ninguna entrada relacionada con la revisión.'
+    if ($Result.Data['UnrelatedCount']) { Write-AmonStatus -Label 'No relacionadas' -Value ([string]$Result.Data['UnrelatedCount']) -State Info -Detail 'contadas, no mostradas' }
+    Show-AmonFindingList -Findings @($Result.Findings)
+    Show-AmonModuleNotes -Result $Result
+}
+
+function Show-AmonShimCacheView {
+    param([Parameter(Mandatory = $true)]$Result, $Context)
+    Write-AmonSection -Title 'SHIMCACHE' -Subtitle 'Archivos que el sistema vio antes del último arranque. No prueba que se ejecutaran.'
+    Write-AmonTable -Title 'ENTRADAS RELEVANTES' -MaxRows (Get-AmonMaxRows $Context) -Rows @($Result.Artifacts | Sort-Object Position) -Columns @(
+        @{ Header = 'POS.'; Property = 'Position'; Align = 'Right' },
+        @{ Header = 'MODIFICADO'; Property = { param($r) if ($r.ModifiedUtc) { $r.ModifiedUtc.ToLocalTime().ToString('yyyy-MM-dd HH:mm') } } },
+        @{ Header = 'EXISTE'; Property = { param($r) if ($r.Exists) { 'sí' } else { 'no' } }; Token = { param($r) if ($r.Exists) { 'primary' } else { 'warning' } } },
+        @{ Header = 'ARCHIVO'; Property = 'Path'; IsPath = $true }
+    ) -EmptyText 'Ninguna entrada relacionada con la revisión.'
+    if ($Result.Data['UnrelatedCount']) { Write-AmonStatus -Label 'No relacionadas' -Value ([string]$Result.Data['UnrelatedCount']) -State Info -Detail 'contadas, no mostradas' }
+    Show-AmonFindingList -Findings @($Result.Findings)
+    Show-AmonModuleNotes -Result $Result
+}
+
+function Show-AmonTamperView {
+    param([Parameter(Mandatory = $true)]$Result, $Context)
+    Write-AmonSection -Title 'BYPASS & TAMPER CHECK' -Subtitle 'Servicios que generan rastros forenses y cambios de la hora del sistema.'
+    Write-AmonTable -Title 'SERVICIOS FORENSES' -Rows @($Result.Artifacts) -Columns @(
+        @{ Header = 'SERVICIO'; Property = 'Service' },
+        @{ Header = 'ESTADO'; Property = 'State'; Token = { param($r) if ($r.State -eq 'Running') { 'success' } else { 'warning' } } },
+        @{ Header = 'INICIO'; Property = 'StartMode'; Token = { param($r) if ($r.StartMode -eq 'Disabled') { 'warning' } else { 'primary' } } },
+        @{ Header = 'PROCESO DESDE'; Property = { param($r) if ($r.ProcessStartUtc) { $r.ProcessStartUtc.ToLocalTime().ToString('yyyy-MM-dd HH:mm') } } }
+    )
+    if ($Result.Data['BootUtc']) { Write-AmonStatus -Label 'Último arranque' -Value ([datetime]$Result.Data['BootUtc']).ToLocalTime().ToString('yyyy-MM-dd HH:mm') -State Info }
+    Show-AmonFindingList -Findings @($Result.Findings)
+    Show-AmonModuleNotes -Result $Result
+}
+
 function Show-AmonTempView {
     param([Parameter(Mandatory = $true)]$Result, $Context)
     Write-AmonSection -Title 'TEMP INDICATOR SWEEP'
@@ -315,16 +387,27 @@ function Show-AmonTimelineView {
 function Show-AmonVerdictView {
     param([Parameter(Mandatory = $true)]$Correlation, $Context)
     Write-AmonSection -Title 'DETECTION & CORRELATION' -Subtitle 'DETECTED = indicador presente · CORRELATED = varias fuentes independientes · INCONCLUSIVE = información insuficiente.'
-    $relevant = @($Correlation.ClientVerdicts | Where-Object { $_.Status -ne 'NOT DETECTED' })
+    if ($Correlation.Outcome) {
+        Write-AmonStatus -Label 'Resultado' -Value $Correlation.Outcome -State $script:OutcomeState[[string]$Correlation.Outcome] -Detail 'para revisión humana'
+    }
+    # La tabla solo lleva clientes con algún indicio: los limpios y los que no tienen firmas
+    # (no comprobables por archivo) caben en una línea cada uno y no se confunden con sospechas.
+    $relevant = @($Correlation.ClientVerdicts | Where-Object { $_.Status -notin @('NOT DETECTED', 'NOT COVERED') })
     $clean = @($Correlation.ClientVerdicts | Where-Object Status -EQ 'NOT DETECTED')
-    Write-AmonTable -Title 'VEREDICTO POR CLIENTE' -Rows $relevant -Columns @(
-        @{ Header = 'CLIENTE'; Property = 'Client' },
-        @{ Header = 'ESTADO'; Property = 'Status'; Token = { param($r) $script:StatusToken[[string]$r.Status] } },
-        @{ Header = 'CONF.'; Property = { param($r) $script:ConfEs[[string]$r.Confidence] } },
-        @{ Header = 'JUSTIFICACIÓN'; Property = 'Justification' }
-    ) -EmptyText 'Ningún cliente con indicadores.'
+    $uncovered = @($Correlation.ClientVerdicts | Where-Object Status -EQ 'NOT COVERED')
+    if ($relevant.Count) {
+        Write-AmonTable -Title 'VEREDICTO POR CLIENTE' -Rows $relevant -Columns @(
+            @{ Header = 'CLIENTE'; Property = 'Client' },
+            @{ Header = 'ESTADO'; Property = 'Status'; Token = { param($r) $script:StatusToken[[string]$r.Status] } },
+            @{ Header = 'CONF.'; Property = { param($r) $script:ConfEs[[string]$r.Confidence] } },
+            @{ Header = 'JUSTIFICACIÓN'; Property = 'Justification' }
+        )
+    }
     if ($clean.Count) {
-        Write-AmonStatus -Label 'NOT DETECTED' -Value "$($clean.Count) clientes" -State Ok -Detail ((@($clean | ForEach-Object Client) -join ', '))
+        Write-AmonStatus -Label 'Sin indicadores' -Value "$($clean.Count) clientes" -State Ok -Detail ((@($clean | ForEach-Object Client) -join ', '))
+    }
+    if ($uncovered.Count) {
+        Write-AmonStatus -Label 'Sin firmas' -Value "$($uncovered.Count) clientes" -State Skip -Detail ('no comprobables por archivo: ' + (@($uncovered | ForEach-Object Client) -join ', '))
     }
     Show-AmonFindingList -Findings @($Correlation.Correlated) -Max 8
     $w = (Get-AmonPanelWidth) - 4
@@ -346,6 +429,11 @@ function Show-AmonResultView {
         'UserAssist' { Show-AmonUserAssistView -Result $Result -Context $Context }
         'Events' { Show-AmonEventView -Result $Result -Context $Context }
         'Temp' { Show-AmonTempView -Result $Result -Context $Context }
+        'BAM' { Show-AmonBamView -Result $Result -Context $Context }
+        'Memory' { Show-AmonMemoryView -Result $Result -Context $Context }
+        'ShimCache' { Show-AmonShimCacheView -Result $Result -Context $Context }
+        'PCA' { Show-AmonPcaView -Result $Result -Context $Context }
+        'Tamper' { Show-AmonTamperView -Result $Result -Context $Context }
         default { Show-AmonFindingList -Findings @($Result.Findings); Show-AmonModuleNotes -Result $Result }
     }
 }
@@ -353,5 +441,6 @@ function Show-AmonResultView {
 Export-ModuleMember -Function @(
     'Show-AmonModuleStatus', 'Show-AmonModuleNotes', 'Show-AmonFindingList', 'Show-AmonResultView', 'Show-AmonTimelineView', 'Show-AmonVerdictView',
     'Show-AmonMinecraftView', 'Show-AmonSignatureView', 'Show-AmonProcessView', 'Show-AmonPrefetchView', 'Show-AmonRecycleView',
-    'Show-AmonUsnView', 'Show-AmonRecentView', 'Show-AmonUserAssistView', 'Show-AmonEventView', 'Show-AmonTempView'
+    'Show-AmonUsnView', 'Show-AmonRecentView', 'Show-AmonUserAssistView', 'Show-AmonEventView', 'Show-AmonTempView',
+    'Show-AmonBamView', 'Show-AmonShimCacheView', 'Show-AmonTamperView', 'Show-AmonMemoryView', 'Show-AmonPcaView'
 )

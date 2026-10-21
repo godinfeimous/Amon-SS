@@ -4,14 +4,15 @@
     Catálogo de módulos y ejecución ordenada del escaneo completo.
 
     Orden de investigación:
-      1 Minecraft  2 Firmas  3 Procesos  4 Prefetch  5 Recent  6 UserAssist  7 Eventos
-      8 Temp (solo con indicadores)  9 Papelera  10 USN Journal
-      11 Firmas sobre evidencias nuevas (JAR citados por Prefetch, Recent, $R de la papelera...)
-      12 Correlación final y línea temporal
+      1 Minecraft  2 Firmas  3 Procesos  4 Memoria de Java  5 Prefetch  6 BAM  7 ShimCache
+      8 Recent  9 UserAssist  10 Eventos  11 Evasión (servicios y hora)
+      12 Temp (solo con indicadores)  13 Papelera  14 USN Journal
+      15 Firmas sobre evidencias nuevas (JAR citados por Prefetch, BAM, Recent, $R...)
+      16 Correlación final y línea temporal
 #>
 
 Import-Module (Join-Path $PSScriptRoot 'Core.psm1') -DisableNameChecking
-foreach ($m in 'Jar', 'Minecraft', 'Signatures', 'Processes', 'Prefetch', 'Recent', 'UserAssist', 'Events', 'TempSweep', 'RecycleBin', 'USNJournal', 'Correlation', 'Timeline', 'Reports') {
+foreach ($m in 'Jar', 'Minecraft', 'Signatures', 'Processes', 'Memory', 'Prefetch', 'ExecutionArtifacts', 'Recent', 'UserAssist', 'Events', 'Tamper', 'TempSweep', 'RecycleBin', 'USNJournal', 'Correlation', 'Timeline', 'Reports') {
     Import-Module (Join-Path $PSScriptRoot "$m.psm1") -DisableNameChecking
 }
 
@@ -21,10 +22,15 @@ function Get-AmonModuleCatalog {
         [pscustomobject]@{ Key = 'Minecraft'; Name = 'Minecraft Analysis'; RequiresAdmin = $false; Description = 'Instancias, launchers, loaders, mods instalados y cargados, perfiles de versión.'; Run = { param($c) Invoke-AmonMinecraftAnalysis -Context $c } }
         [pscustomobject]@{ Key = 'Signatures'; Name = 'Cheat Signature Scanner'; RequiresAdmin = $false; Description = 'Firmas JSON sobre JAR (paquetes, metadatos, cadenas), configuraciones y logs.'; Run = { param($c) Invoke-AmonSignatureAnalysis -Context $c } }
         [pscustomobject]@{ Key = 'Processes'; Name = 'Process Inspector'; RequiresAdmin = $false; Description = 'Java y launchers en ejecución: línea de comandos, agentes, firmas, DLL cargadas.'; Run = { param($c) Invoke-AmonProcessAnalysis -Context $c } }
+        [pscustomobject]@{ Key = 'Memory'; Name = 'Java Memory Scanner'; RequiresAdmin = $false; Description = 'Firmas de clientes en la memoria de Minecraft en ejecución (detecta inyectados).'; Run = { param($c) Invoke-AmonMemoryAnalysis -Context $c } }
         [pscustomobject]@{ Key = 'Prefetch'; Name = 'Prefetch Analyzer'; RequiresAdmin = $true; Description = 'Ejecuciones registradas por Windows y JAR cargados por Java.'; Run = { param($c) Invoke-AmonPrefetchAnalysis -Context $c } }
+        [pscustomobject]@{ Key = 'BAM'; Name = 'BAM (Background Activity Moderator)'; RequiresAdmin = $true; Description = 'Última ejecución de cada programa según Windows.'; Run = { param($c) Invoke-AmonBamAnalysis -Context $c } }
+        [pscustomobject]@{ Key = 'PCA'; Name = 'PCA & MUICache'; RequiresAdmin = $false; Description = 'Programas abiertos desde la interfaz gráfica (Windows 11: con hora de última ejecución).'; Run = { param($c) Invoke-AmonPcaAnalysis -Context $c } }
+        [pscustomobject]@{ Key = 'ShimCache'; Name = 'ShimCache (AppCompatCache)'; RequiresAdmin = $false; Description = 'Ejecutables vistos por el sistema antes del último arranque.'; Run = { param($c) Invoke-AmonShimCacheAnalysis -Context $c } }
         [pscustomobject]@{ Key = 'Recent'; Name = 'Recent Files'; RequiresAdmin = $false; Description = 'Accesos recientes del Explorador relacionados con la revisión.'; Run = { param($c) Invoke-AmonRecentAnalysis -Context $c } }
         [pscustomobject]@{ Key = 'UserAssist'; Name = 'UserAssist'; RequiresAdmin = $false; Description = 'Programas iniciados desde el Explorador (ROT13).'; Run = { param($c) Invoke-AmonUserAssistAnalysis -Context $c } }
         [pscustomobject]@{ Key = 'Events'; Name = 'Windows Event Analysis'; RequiresAdmin = $true; WithoutAdmin = 'sin administrador: solo System, Defender y claves Run (PARCIAL)'; Description = 'Eventos 4688, 1102, 104, Defender y claves Run.'; Run = { param($c) Invoke-AmonEventAnalysis -Context $c } }
+        [pscustomobject]@{ Key = 'Tamper'; Name = 'Bypass & Tamper Check'; RequiresAdmin = $false; Description = 'Servicios forenses detenidos o reiniciados y cambios de hora del sistema.'; Run = { param($c) Invoke-AmonTamperAnalysis -Context $c } }
         [pscustomobject]@{ Key = 'Temp'; Name = 'Temp Indicator Sweep'; RequiresAdmin = $false; Description = 'Temp solo con indicadores concretos (nombre o hash).'; Run = { param($c) Invoke-AmonTempSweep -Context $c } }
         [pscustomobject]@{ Key = 'RecycleBin'; Name = 'Recycle Bin Forensics'; RequiresAdmin = $false; Description = 'Metadatos $I/$R de la papelera del usuario y actividad reciente.'; Run = { param($c) Invoke-AmonRecycleBinAnalysis -Context $c } }
         [pscustomobject]@{ Key = 'USNJournal'; Name = 'NTFS / USN Journal'; RequiresAdmin = $true; Description = 'Creación, borrado y renombrado de archivos relevantes (solo lectura).'; Run = { param($c) Invoke-AmonUsnAnalysis -Context $c } }
@@ -51,7 +57,12 @@ function Get-AmonScanScope {
         else { $lines.Add('Minecraft: no se encontraron instancias en las rutas conocidas.') }
     }
     if ('Processes' -in $Modules) { $lines.Add('Procesos en ejecución (solo Java, launchers e indicadores).') }
+    if ('Memory' -in $Modules) { $lines.Add('Memoria de java.exe / javaw.exe (solo coincidencias con firmas).') }
     if ('Prefetch' -in $Modules) { $lines.Add("$env:SystemRoot\Prefetch") }
+    if ('BAM' -in $Modules) { $lines.Add('HKLM\SYSTEM\CurrentControlSet\Services\bam\State\UserSettings') }
+    if ('PCA' -in $Modules) { $lines.Add("$env:SystemRoot\appcompat\pca; HKCU Compatibility Assistant\Store y MuiCache") }
+    if ('ShimCache' -in $Modules) { $lines.Add('HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\AppCompatCache') }
+    if ('Tamper' -in $Modules) { $lines.Add('Servicios SysMain, PcaSvc, DPS, EventLog y bam; cambios de hora del sistema.') }
     if ('Recent' -in $Modules) { $lines.Add("$env:APPDATA\Microsoft\Windows\Recent") }
     if ('UserAssist' -in $Modules) { $lines.Add('HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\UserAssist') }
     if ('Events' -in $Modules) { $lines.Add('Registros Security / System / Windows Defender; claves Run de HKCU y HKLM.') }

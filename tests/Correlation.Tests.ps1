@@ -50,11 +50,36 @@ Describe 'Correlación de evidencias' -Tag 'Unit' {
         ($c.Correlated | Where-Object ClientId -EQ 'doomsday').Confidence | Should -Be 'Medium'
     }
 
-    It 'un cliente sin firmas verificables queda como no concluyente, nunca como no detectado' {
-        $c = Invoke-AmonCorrelation -Context (New-CorrContext)
-        $v = $c.ClientVerdicts | Where-Object ClientId -EQ 'vape'
-        $v.Status | Should -Be 'INCONCLUSIVE'
+    It 'un cliente sin firmas verificables queda fuera de cobertura: ni sospechoso ni descartado' {
+        $ctx = New-CorrContext
+        $ctx.Signatures = [pscustomobject]@{ Clients = @([pscustomobject]@{ Id = 'sin-firmas'; Name = 'Sin Firmas'; Category = 'cheat-client'; Indicators = @(); FalsePositives = @() }); ClientIndex = @{} }
+        $c = Invoke-AmonCorrelation -Context $ctx
+        $v = $c.ClientVerdicts | Where-Object ClientId -EQ 'sin-firmas'
+        $v.Status | Should -Be 'NOT COVERED'
         $v.Justification | Should -Match 'verificables'
+        $c.Summary.Inconclusive | Should -Be 0
+        $c.Summary.NotCovered | Should -Be 1
+        $c.Conclusion | Should -Not -Match 'Indicadores débiles'
+    }
+
+    It 'el resultado global resume la revisión en una sola palabra' {
+        (Invoke-AmonCorrelation -Context (New-CorrContext)).Outcome | Should -Be 'SIN INDICADORES'
+        $ctx = New-CorrContext
+        Add-Result $ctx 'Signatures' @((New-AmonFinding -Module Signatures -Category CheatSignature -Title 'Wurst' -Status DETECTED -Confidence High -Client 'Wurst' -ClientId 'wurst' -Path 'C:\x\wurst.jar'))
+        (Invoke-AmonCorrelation -Context $ctx).Outcome | Should -Be 'INDICADORES ENCONTRADOS'
+        $ctx2 = New-CorrContext
+        Add-Result $ctx2 'Signatures' @((New-AmonFinding -Module Signatures -Category ClientConfig -Title 'Wurst: configuración' -Status INCONCLUSIVE -Confidence Low -Client 'Wurst' -ClientId 'wurst' -Path 'C:\mc\wurst'))
+        (Invoke-AmonCorrelation -Context $ctx2).Outcome | Should -Be 'REVISAR A MANO'
+    }
+
+    It 'una coincidencia solo de nombre no cambia el resultado ni el veredicto del cliente' {
+        $ctx = New-CorrContext
+        Add-Result $ctx 'Recent' @((New-AmonFinding -Module Recent -Category KeywordName -Title 'Nombre relacionado' -Status INCONCLUSIVE -Confidence Low -Client 'Wurst' -ClientId 'wurst' -Path 'C:\Users\S\Documents\wurst-rezepte.exe'))
+        $c = Invoke-AmonCorrelation -Context $ctx
+        $c.Outcome | Should -Be 'SIN INDICADORES'
+        $v = $c.ClientVerdicts | Where-Object ClientId -EQ 'wurst'
+        $v.Status | Should -Be 'NOT DETECTED'
+        $v.Justification | Should -Match 'nombre'
     }
 
     It 'sin indicadores declara NOT DETECTED dentro del alcance y no emite veredicto automático' {
@@ -212,6 +237,16 @@ Describe 'Reportes de evidencias' -Tag 'Unit' {
         $txt = Get-Content (Join-Path $dir "$($model.ReviewId).txt") -Raw -Encoding UTF8
         $txt | Should -Not -Match '[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]'
         $txt | Should -Not -Match '(?m)^\s+\[CORRELATED\] FORJADO'
+    }
+
+    It 'exportar otra vez no sobrescribe un reporte ya exportado (su hash puede estar anotado)' {
+        $dir = Join-Path $TestDrive 'reports-twice'
+        $a = Export-AmonReport -Model $script:model -Directory $dir -Formats @('txt')
+        $hashA = (Get-FileHash $a.Manifest).Hash
+        $b = Export-AmonReport -Model $script:model -Directory $dir -Formats @('txt')
+        $b.Manifest | Should -Not -Be $a.Manifest
+        (Get-FileHash $a.Manifest).Hash | Should -Be $hashA
+        (Test-AmonReportIntegrity -ManifestPath $a.Manifest | Where-Object { -not $_.Valid }) | Should -BeNullOrEmpty
     }
 
     It 'el TXT incluye la conclusión para revisión humana y las limitaciones' {

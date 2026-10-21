@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "gamesense",
+  "name": "GameSense (1.12.2)",
+  "category": "cheat-client",
+  "description": "Cliente de trampas.",
+  "openSource": false,
+  "loaders": [],
+  "references": [],
+  "keywords": [],
+  "falsePositives": [],
+  "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+  "indicators": [
+    { "id": "gamesense.package.1", "type": "package", "value": "com/gamesense/", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/IUDevman/gamesense-client/62061a43fea311f42c64ea2b1dbbb56599c32295/src/main/java/com/gamesense/client/GameSense.java", "note": "Repositorio oficial IUDevman/gamesense-client (anarquía 1.12.2). No confundir con otros productos llamados 'GameSense'." },
+    { "id": "gamesense.modid.1", "type": "modid", "value": "gamesense", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/IUDevman/gamesense-client/62061a43fea311f42c64ea2b1dbbb56599c32295/src/main/resources/mcmod.info" },
+    { "id": "gamesense.entry.1", "type": "entry", "value": "mixins.gamesense.json", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/IUDevman/gamesense-client/62061a43fea311f42c64ea2b1dbbb56599c32295/build.gradle", "note": "'MixinConfigs': 'mixins.gamesense.json'." },
+    { "id": "gamesense.manifest.1", "type": "manifest", "value": "FMLCorePlugin: com.gamesense.mixin.GameSenseMixinLoader", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/IUDevman/gamesense-client/62061a43fea311f42c64ea2b1dbbb56599c32295/build.gradle" },
+    { "id": "gamesense.config.1", "type": "config", "value": "GameSense/Modules", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/IUDevman/gamesense-client/62061a43fea311f42c64ea2b1dbbb56599c32295/src/main/java/com/gamesense/api/config/SaveConfig.java", "note": "fileName = \"GameSense/\" + moduleName = \"Modules/\" (relativo al directorio de trabajo).", "relativeTo": "gameDir" },
+    { "id": "gamesense.log.1", "type": "log", "value": "Starting up GameSense v\\d+\\.\\d+\\.\\d+!", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/IUDevman/gamesense-client/62061a43fea311f42c64ea2b1dbbb56599c32295/src/main/java/com/gamesense/client/GameSense.java", "note": "LOGGER.info(\"Starting up \" + MODNAME + \" \" + MODVER + \"!\") con MODVER = \"v2.3.0\".", "match": "regex" }
+  ]
+}

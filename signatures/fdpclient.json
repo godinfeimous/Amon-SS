@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "fdpclient",
+  "name": "FDPClient",
+  "category": "cheat-client",
+  "description": "Cliente de trampas.",
+  "openSource": false,
+  "loaders": [],
+  "references": [],
+  "keywords": ["fdpclient"],
+  "falsePositives": [],
+  "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+  "indicators": [
+    { "id": "fdpclient.modid.1", "type": "modid", "value": "fdpclient", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/SkidderMC/FDPClient/07d03078b3fe12ac7278c678f56d0e7f607fbec2/src/main/resources/mcmod.info", "note": "Repositorio oficial SkidderMC/FDPClient (commit 07d0307). Fork de LiquidBounce legacy: comparte net/ccbluex/liquidbounce/." },
+    { "id": "fdpclient.entry.1", "type": "entry", "value": "fdpclient.forge.mixins.json", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/SkidderMC/FDPClient/07d03078b3fe12ac7278c678f56d0e7f607fbec2/src/main/resources/fdpclient.forge.mixins.json" },
+    { "id": "fdpclient.entry.2", "type": "entry", "value": "fdpclient.mixins.refmap.json", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/SkidderMC/FDPClient/07d03078b3fe12ac7278c678f56d0e7f607fbec2/src/main/resources/fdpclient.forge.mixins.json", "note": "Campo 'refmap'." },
+    { "id": "fdpclient.manifest.1", "type": "manifest", "value": "MixinConfigs: fdpclient.forge.mixins.json", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/SkidderMC/FDPClient/07d03078b3fe12ac7278c678f56d0e7f607fbec2/build.gradle", "note": "manifest.attributes (línea 336)." },
+    { "id": "fdpclient.config.1", "type": "config", "value": "FDPCLIENT", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/SkidderMC/FDPClient/07d03078b3fe12ac7278c678f56d0e7f607fbec2/src/main/java/net/ccbluex/liquidbounce/file/FileManager.kt", "note": "val dir = File(mc.mcDataDir, \"FDPCLIENT\").", "relativeTo": "gameDir" },
+    { "id": "fdpclient.log.1", "type": "log", "value": "Starting preload tasks of FDPCLIENT", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/SkidderMC/FDPClient/07d03078b3fe12ac7278c678f56d0e7f607fbec2/src/main/java/net/ccbluex/liquidbounce/FDPClient.kt", "note": "LOGGER.info(\"Starting preload tasks of $CLIENT_NAME\") con CLIENT_NAME = \"FDPCLIENT\"." },
+    { "id": "fdpclient.sha256.1", "type": "sha256", "value": "0c495411826534916323ace825e0e734ac6e5ddc643276c834db7de54f2ab091", "strength": "strong", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/Briiqn/TuxTool/main/check/modcheats.sh", "note": "TuxTool: 'Skidp (FDP Client)'." }
+  ]
+}

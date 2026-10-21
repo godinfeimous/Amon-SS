@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "argon",
+  "name": "Argon",
+  "category": "cheat-client",
+  "description": "Cliente de trampas.",
+  "openSource": false,
+  "loaders": [],
+  "references": [],
+  "keywords": [],
+  "falsePositives": [],
+  "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+  "indicators": [
+    { "id": "argon.package.1", "type": "package", "value": "dev/lvstrng/argon/", "strength": "strong", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/06gw/argon-b1.1-decompiled/36d90a6e85de0e4a923cc7df00f9e223d7302989/client.mixins.json", "note": "JAR descompilado (06gw/argon-b1.1-decompiled): 'package': 'dev.lvstrng.argon.mixin'. zeezy lo usa como ejemplo de firma ('dev/lvstrng/argon/')." },
+    { "id": "argon.entrypoint.1", "type": "entrypoint", "value": "dev.lvstrng.argon.Main", "strength": "strong", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/06gw/argon-b1.1-decompiled/36d90a6e85de0e4a923cc7df00f9e223d7302989/fabric.mod.json", "note": "Se disfraza de ImmediatelyFast: el fabric.mod.json declara id 'immediatelyfast' y autor RK_01. No usar ese modid (es el de un mod legitimo)." },
+    { "id": "argon.entry.1", "type": "entry", "value": "argon-refmap.json", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/06gw/argon-b1.1-decompiled/36d90a6e85de0e4a923cc7df00f9e223d7302989/argon-refmap.json", "note": "Entrada en la raiz del JAR." },
+    { "id": "argon.entry.2", "type": "entry", "value": "LICENSE_argon", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/06gw/argon-b1.1-decompiled/36d90a6e85de0e4a923cc7df00f9e223d7302989/LICENSE_argon", "note": "Entrada en la raiz del JAR." }
+  ]
+}

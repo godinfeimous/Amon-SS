@@ -4,6 +4,7 @@
 //   Compression    : descompresión de Prefetch "MAM" (XPRESS Huffman) vía ntdll, API documentada en el WDK.
 //   Usn            : lectura de solo lectura del USN Journal NTFS (FSCTL_QUERY/READ_USN_JOURNAL).
 //   Volumes        : correspondencia letra de unidad <-> dispositivo NT.
+//   ProcessMemory  : búsqueda de cadenas en la memoria de un proceso (solo lectura).
 //   AuditPolicy    : consulta de la política de auditoría (AuditQuerySystemPolicy).
 //
 // Ninguna función escribe en el sistema analizado: todos los handles se abren con acceso de lectura
@@ -818,6 +819,189 @@ namespace AmonSS.Native
             uint n = QueryDosDeviceW(name, sb, sb.Capacity);
             if (n == 0) return null;
             return sb.ToString();
+        }
+    }
+
+    public sealed class MemoryScanResult
+    {
+        public int[] Patterns = new int[0];
+        public long[] Addresses = new long[0];
+        public long BytesScanned;
+        public int Regions;
+        public int UnreadableRegions;
+        public bool Truncated;
+        public bool TimedOut;
+        public string Error;
+        public int ErrorCode;
+    }
+
+    // Escaneo de cadenas en la memoria de un proceso, de solo lectura: se abre con
+    // PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, se recorren las regiones comprometidas y
+    // legibles con VirtualQueryEx y se leen con ReadProcessMemory. Nunca se escribe ni se
+    // suspende el proceso, y no se guarda nada de su contenido: solo qué patrones aparecen.
+    public static class ProcessMemory
+    {
+        private const uint PROCESS_QUERY_INFORMATION = 0x0400;
+        private const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
+        private const uint PROCESS_VM_READ = 0x0010;
+        private const uint MEM_COMMIT = 0x1000;
+        private const uint PAGE_NOACCESS = 0x01;
+        private const uint PAGE_GUARD = 0x100;
+        private const uint READABLE = 0x02 | 0x04 | 0x08 | 0x20 | 0x40 | 0x80;
+
+        // Con LayoutKind.Sequential el relleno coincide con MEMORY_BASIC_INFORMATION en x86 (28
+        // bytes) y en x64 (48 bytes: 4 de relleno tras AllocationProtect y 4 al final).
+        [StructLayout(LayoutKind.Sequential)]
+        private struct MEMORY_BASIC_INFORMATION
+        {
+            public IntPtr BaseAddress;
+            public IntPtr AllocationBase;
+            public uint AllocationProtect;
+            public IntPtr RegionSize;
+            public uint State;
+            public uint Protect;
+            public uint Type;
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr OpenProcess(uint access, bool inherit, int processId);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool CloseHandle(IntPtr handle);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr VirtualQueryEx(IntPtr process, IntPtr address, out MEMORY_BASIC_INFORMATION info, IntPtr length);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool ReadProcessMemory(IntPtr process, IntPtr address, byte[] buffer, IntPtr size, out IntPtr read);
+
+        public static MemoryScanResult Scan(int processId, PatternMatcher matcher, long maxBytes, DateTime deadlineUtc)
+        {
+            MemoryScanResult result = new MemoryScanResult();
+            IntPtr h = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, processId);
+            if (h == IntPtr.Zero) h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ, false, processId);
+            if (h == IntPtr.Zero)
+            {
+                result.ErrorCode = Marshal.GetLastWin32Error();
+                result.Error = "No se pudo abrir el proceso para lectura (error " + result.ErrorCode + ").";
+                return result;
+            }
+            try
+            {
+                ScanState st = matcher.NewState();
+                byte[] buf = new byte[4 << 20];
+                int mbiSize = Marshal.SizeOf(typeof(MEMORY_BASIC_INFORMATION));
+                long address = 0;
+                long limit = IntPtr.Size == 8 ? 0x7FFFFFFFFFFFL : 0x7FFFFFFFL;
+                while (address < limit)
+                {
+                    if (DateTime.UtcNow > deadlineUtc) { result.TimedOut = true; break; }
+                    MEMORY_BASIC_INFORMATION mbi;
+                    if (VirtualQueryEx(h, new IntPtr(address), out mbi, new IntPtr(mbiSize)) == IntPtr.Zero) break;
+                    long regionBase = mbi.BaseAddress.ToInt64();
+                    long regionSize = mbi.RegionSize.ToInt64();
+                    if (regionSize <= 0) break;
+                    bool readable = mbi.State == MEM_COMMIT && (mbi.Protect & PAGE_GUARD) == 0 && (mbi.Protect & PAGE_NOACCESS) == 0 && (mbi.Protect & READABLE) != 0;
+                    if (readable)
+                    {
+                        result.Regions++;
+                        // Cada región empieza con el autómata a cero (no se unen cadenas de regiones
+                        // distintas) y la posición en su dirección: los desplazamientos son direcciones.
+                        st.State = 0;
+                        st.Position = regionBase;
+                        long done = 0;
+                        bool anyRead = false;
+                        while (done < regionSize)
+                        {
+                            if (maxBytes > 0 && result.BytesScanned >= maxBytes) { result.Truncated = true; break; }
+                            int want = (int)Math.Min(buf.Length, regionSize - done);
+                            IntPtr got;
+                            if (!ReadProcessMemory(h, new IntPtr(regionBase + done), buf, new IntPtr(want), out got) || got.ToInt64() <= 0)
+                            {
+                                // Página liberada o protegida entre la consulta y la lectura: se salta.
+                                st.State = 0;
+                                done += want;
+                                st.Position = regionBase + done;
+                                continue;
+                            }
+                            anyRead = true;
+                            int n = (int)got.ToInt64();
+                            matcher.Feed(st, buf, 0, n);
+                            result.BytesScanned += n;
+                            done += n;
+                            if (n < want) { st.State = 0; st.Position = regionBase + done; }
+                        }
+                        if (!anyRead) result.UnreadableRegions++;
+                        if (result.Truncated) break;
+                    }
+                    address = regionBase + regionSize;
+                }
+                MatchResult m = matcher.Finish(st, result.Truncated || result.TimedOut);
+                result.Patterns = m.Patterns;
+                result.Addresses = m.Offsets;
+            }
+            finally { CloseHandle(h); }
+            return result;
+        }
+
+        // Devuelve (sin repetir) el texto ASCII imprimible que sigue a cada aparición de 'marker'
+        // hasta 'stop' o un carácter no imprimible, con 'maxLength' caracteres como máximo. Solo
+        // regiones privadas de lectura/escritura (donde viven los datos del programa). Lo usa
+        // Amon SS para las trazas PcaClient de explorer.exe; el resto de la memoria no se guarda.
+        public static List<string> ExtractAfter(int processId, byte[] marker, byte stop, int maxLength, int maxResults, long maxBytes, DateTime deadlineUtc)
+        {
+            List<string> found = new List<string>();
+            HashSet<string> seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            IntPtr h = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, processId);
+            if (h == IntPtr.Zero) h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ, false, processId);
+            if (h == IntPtr.Zero) throw new InvalidOperationException("No se pudo abrir el proceso para lectura (error " + Marshal.GetLastWin32Error() + ").");
+            try
+            {
+                int chunk = 4 << 20;
+                int overlap = marker.Length + maxLength;
+                byte[] buf = new byte[chunk + overlap];
+                int mbiSize = Marshal.SizeOf(typeof(MEMORY_BASIC_INFORMATION));
+                long address = 0, total = 0;
+                long limit = IntPtr.Size == 8 ? 0x7FFFFFFFFFFFL : 0x7FFFFFFFL;
+                while (address < limit && found.Count < maxResults && DateTime.UtcNow <= deadlineUtc && (maxBytes <= 0 || total < maxBytes))
+                {
+                    MEMORY_BASIC_INFORMATION mbi;
+                    if (VirtualQueryEx(h, new IntPtr(address), out mbi, new IntPtr(mbiSize)) == IntPtr.Zero) break;
+                    long regionBase = mbi.BaseAddress.ToInt64(), regionSize = mbi.RegionSize.ToInt64();
+                    if (regionSize <= 0) break;
+                    bool rw = mbi.State == MEM_COMMIT && mbi.Type == 0x20000 && (mbi.Protect & PAGE_GUARD) == 0 && (mbi.Protect & 0x04) != 0;
+                    if (rw)
+                    {
+                        for (long done = 0; done < regionSize && found.Count < maxResults; done += chunk)
+                        {
+                            int want = (int)Math.Min(chunk + overlap, regionSize - done);
+                            IntPtr got;
+                            if (!ReadProcessMemory(h, new IntPtr(regionBase + done), buf, new IntPtr(want), out got)) continue;
+                            int n = (int)got.ToInt64();
+                            total += n;
+                            int last = n - marker.Length;
+                            for (int i = 0; i <= last; i++)
+                            {
+                                if (buf[i] != marker[0]) continue;
+                                int k = 1;
+                                while (k < marker.Length && buf[i + k] == marker[k]) k++;
+                                if (k < marker.Length) continue;
+                                int s = i + marker.Length, e = s;
+                                while (e < n && e - s < maxLength && buf[e] != stop && buf[e] >= 0x20 && buf[e] < 0x7F) e++;
+                                if (e > s && (e < n || e - s >= maxLength))
+                                {
+                                    string text = Encoding.ASCII.GetString(buf, s, e - s);
+                                    if (seen.Add(text)) { found.Add(text); if (found.Count >= maxResults) break; }
+                                }
+                                i = e;
+                            }
+                        }
+                    }
+                    address = regionBase + regionSize;
+                }
+            }
+            finally { CloseHandle(h); }
+            return found;
         }
     }
 

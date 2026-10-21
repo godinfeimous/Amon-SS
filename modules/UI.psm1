@@ -70,6 +70,7 @@ $script:StatusStyle = @{
     'DETECTED'     = @{ Glyph = 'Dot'; Token = 'finding'; Bold = $true }
     'INCONCLUSIVE' = @{ Glyph = 'DiamondHollow'; Token = 'warning'; Bold = $true }
     'NOT DETECTED' = @{ Glyph = 'Dot'; Token = 'success'; Bold = $false }
+    'NOT COVERED'  = @{ Glyph = 'DiamondHollow'; Token = 'muted'; Bold = $false }
     'INFO'         = @{ Glyph = 'Arrow'; Token = 'secondary'; Bold = $false }
 }
 $script:ConfidenceEs = @{ 'High' = 'ALTA'; 'Medium' = 'MEDIA'; 'Low' = 'BAJA' }
@@ -1221,6 +1222,51 @@ function Read-AmonInput {
     return $line.Trim()
 }
 
+function Read-AmonKey {
+    <#
+    .SYNOPSIS
+        Lee UNA tecla, sin Enter. Devuelve la letra o cifra en minúsculas, 'enter' o 'esc'.
+    .PARAMETER Keys
+        Teclas aceptadas; las demás se ignoran (sin lista, vale cualquiera).
+    .PARAMETER TimeoutSeconds
+        Si nadie pulsa nada en ese tiempo, devuelve -Default (flujo automático).
+    .NOTES
+        Con la entrada redirigida (pruebas, tuberías) cada tecla llega como una línea: se usa su
+        primer carácter, una línea vacía es 'enter' y el fin de la entrada devuelve -Default.
+    #>
+    param([string]$Prompt = 'Pulsa una tecla', [string[]]$Keys = @(), [string]$Default = '', [int]$TimeoutSeconds = 0)
+    Assert-AmonUI
+    Complete-AmonProgress
+    $hint = if ($TimeoutSeconds -gt 0) { Format-AmonColor ("  (sigue solo en {0} s)" -f $TimeoutSeconds) 'muted' } else { '' }
+    Write-AmonLines @('  ' + (Format-AmonColor (Get-AmonGlyph 'Arrow') 'accent') + ' ' + (Format-AmonColor $Prompt 'secondary') + $hint + ' ') -NoNewline
+    $accept = { param($k) (-not $Keys.Count) -or ($Keys -contains $k) }
+    if ([Console]::IsInputRedirected) {
+        while ($true) {
+            try { $line = [Console]::In.ReadLine() } catch { $line = $null }
+            if ($null -eq $line) { Write-AmonLines @(''); return $Default }
+            $t = $line.Trim()
+            $k = if (-not $t) { 'enter' } else { $t.Substring(0, 1).ToLowerInvariant() }
+            if (& $accept $k) { Write-AmonLines @(''); return $k }
+        }
+    }
+    $deadline = if ($TimeoutSeconds -gt 0) { [datetime]::UtcNow.AddSeconds($TimeoutSeconds) } else { [datetime]::MaxValue }
+    while ($true) {
+        if ($TimeoutSeconds -gt 0) {
+            while (-not [Console]::KeyAvailable) {
+                if ([datetime]::UtcNow -ge $deadline) { Write-AmonLines @(''); return $Default }
+                Start-Sleep -Milliseconds 50
+            }
+        }
+        $info = [Console]::ReadKey($true)
+        $k = switch ($info.Key) {
+            ([ConsoleKey]::Enter) { 'enter' }
+            ([ConsoleKey]::Escape) { 'esc' }
+            default { ([string]$info.KeyChar).ToLowerInvariant() }
+        }
+        if ($k -and (& $accept $k)) { Write-AmonLines @(''); return $k }
+    }
+}
+
 function Read-AmonConfirm {
     param([Parameter(Mandatory = $true)][string]$Prompt, [bool]$Default = $false)
     $hint = if ($Default) { '[S/n]' } else { '[s/N]' }
@@ -1240,5 +1286,5 @@ Export-ModuleMember -Function @(
     'Format-AmonBox', 'Format-AmonBanner', 'Format-AmonMenu', 'Format-AmonTable', 'Format-AmonProgressBar', 'Format-AmonFinding',
     'Write-AmonLines', 'Show-AmonBanner', 'Show-AmonMenu', 'Write-AmonBox', 'Write-AmonTable', 'Write-AmonStatus',
     'Write-AmonProgress', 'Complete-AmonProgress', 'Write-AmonFinding', 'Write-AmonWarning', 'Write-AmonFooter',
-    'Write-AmonSection', 'Format-AmonSection', 'Write-AmonCountUp', 'Read-AmonInput', 'Read-AmonConfirm'
+    'Write-AmonSection', 'Format-AmonSection', 'Write-AmonCountUp', 'Read-AmonInput', 'Read-AmonKey', 'Read-AmonConfirm'
 )

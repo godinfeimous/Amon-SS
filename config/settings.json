@@ -48,6 +48,9 @@
     "prismlauncher.exe", "PolyMC.exe", "MultiMC.exe", "CurseForge.exe", "Modrinth App.exe",
     "ATLauncher.exe", "GDLauncher.exe", "TLauncher.exe", "SKlauncher.exe", "LabyMod Launcher.exe"
   ],
+  "knownScreenshareTools": [
+    { "name": "Ocean", "patterns": ["\\.oceancache\\", "Ocean Graper Driver", "\\Ocean-"] }
+  ],
   "privacy": {
     "showUnrelatedRecycleEntries": false
   },
@@ -58,10 +61,15 @@
     "Minecraft": true,
     "Signatures": true,
     "Processes": true,
+    "Memory": true,
     "Prefetch": true,
+    "BAM": true,
+    "PCA": true,
+    "ShimCache": true,
     "Recent": true,
     "UserAssist": true,
     "Events": true,
+    "Tamper": true,
     "Temp": true,
     "RecycleBin": true,
     "USNJournal": true

@@ -2,7 +2,7 @@
 .SYNOPSIS
     Verificación de los módulos que necesitan administrador sobre el sistema real.
 .DESCRIPTION
-    Ejecuta Prefetch, USN Journal y eventos de Windows con límite de tiempo y muestra un resumen
+    Ejecuta Prefetch, BAM, USN Journal y eventos de Windows con límite de tiempo y muestra un resumen
     compacto (recuentos, versiones de formato, tiempos y errores de interpretación) para
     comprobar los parsers con datos reales. Solo lectura; no exporta nada.
 .EXAMPLE
@@ -13,7 +13,7 @@ param([int]$TimeoutSeconds = 120)
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-foreach ($m in 'Core', 'Jar', 'Minecraft', 'Signatures', 'Prefetch', 'USNJournal', 'Events') {
+foreach ($m in 'Core', 'Jar', 'Minecraft', 'Signatures', 'Prefetch', 'ExecutionArtifacts', 'USNJournal', 'Events') {
     Import-Module (Join-Path $root "modules\$m.psm1") -Force -DisableNameChecking
 }
 
@@ -55,6 +55,14 @@ Write-Line ("Módulo: estado {0} | relevantes {1} | omitidos por privacidad {2} 
 foreach ($a in ($r.Artifacts | Sort-Object LastRunUtc -Descending | Select-Object -First 8)) {
     Write-Line ("  {0,-28} ejec. {1,4}  última {2}  JAR fuera de librerías: {3}" -f $a.ExecutableName, $a.RunCount, (Format-AmonTimestamp $a.LastRunUtc), @($a.ReferencedJars).Count)
 }
+
+# --- BAM (solo administradores)
+Write-Line ''
+Write-Line '== BAM'
+$bam = Invoke-AmonModule -Name 'BAM' -Context $ctx -TimeoutSeconds $TimeoutSeconds -ScriptBlock { param($c) Invoke-AmonBamAnalysis -Context $c }
+Write-Line ("Módulo: estado {0} | valores {1} | mostrados {2} | para revisar {3} | no relacionados {4} | {5:n1} s" -f $bam.Status, $bam.ArtifactsReviewed, $bam.Artifacts.Count, $bam.Data['ReviewCount'], $bam.Data['UnrelatedCount'], ($bam.DurationMs / 1000))
+foreach ($a in ($bam.Artifacts | Sort-Object LastRunUtc -Descending | Select-Object -First 8)) { Write-Line ("  {0}  firma {1}  {2}" -f (Format-AmonTimestamp $a.LastRunUtc), $a.Signature, [IO.Path]::GetFileName($a.Path)) }
+foreach ($w in ($bam.Warnings | Select-Object -First 3)) { Write-Line "  Aviso: $w" }
 
 # --- USN Journal
 Write-Line ''

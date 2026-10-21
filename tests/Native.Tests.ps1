@@ -70,3 +70,39 @@ Describe 'Native: referencia de archivo NTFS' -Tag 'Integration' {
         [AmonSS.Native.Usn]::GetFileReference((Split-Path -Parent $f)) | Should -Not -Be 0
     }
 }
+
+Describe 'Native: escaneo de memoria de procesos' -Tag 'Integration' {
+    It 'encuentra una cadena que solo existe en otro proceso y no inventa las ausentes' {
+        $present = 'AMONSSMARK' + [guid]::NewGuid().ToString('N')
+        $absent = 'AMONSSMARK' + [guid]::NewGuid().ToString('N')
+        $exe = (Get-Process -Id $PID).Path
+        $child = Start-Process -FilePath $exe -ArgumentList @('-NoProfile', '-Command', "`$x = '$present'; Start-Sleep -Seconds 40") -WindowStyle Hidden -PassThru
+        try {
+            Start-Sleep -Seconds 3
+            $m = New-Object AmonSS.Native.PatternMatcher (, [byte[][]]@([Text.Encoding]::ASCII.GetBytes($present), [Text.Encoding]::ASCII.GetBytes($absent)))
+            $r = [AmonSS.Native.ProcessMemory]::Scan($child.Id, $m, 1GB, [datetime]::UtcNow.AddSeconds(30))
+            $r.Error | Should -BeNullOrEmpty
+            $r.BytesScanned | Should -BeGreaterThan 1MB
+            $r.Patterns | Should -Contain 0
+            $r.Patterns | Should -Not -Contain 1
+            $r.Addresses[0] | Should -BeGreaterThan 0
+        } finally { Stop-Process -Id $child.Id -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'extrae el texto que sigue a un marcador (trazas PcaClient de explorer)' {
+        $tag = [guid]::NewGuid().ToString('N')
+        $exe = (Get-Process -Id $PID).Path
+        # Cadenas ASCII en el proceso hijo: la línea de comandos ANSI las contiene tal cual.
+        $child = Start-Process -FilePath $exe -ArgumentList @('-NoProfile', '-Command', "`$x = 'TRACE,0000,0000,PcaClient,MonitorProcess,C:\Users\S\Downloads\$tag.exe,Time,7'; Start-Sleep -Seconds 40") -WindowStyle Hidden -PassThru
+        try {
+            Start-Sleep -Seconds 3
+            $found = [AmonSS.Native.ProcessMemory]::ExtractAfter($child.Id, [Text.Encoding]::ASCII.GetBytes(',MonitorProcess,'), [byte][char]',', 520, 500, 1GB, [datetime]::UtcNow.AddSeconds(30))
+            $found | Should -Contain "C:\Users\S\Downloads\$tag.exe"
+        } finally { Stop-Process -Id $child.Id -Force -ErrorAction SilentlyContinue }
+    }
+
+    It 'informa del error si el proceso no existe' {
+        $m = New-Object AmonSS.Native.PatternMatcher (, [byte[][]]@([Text.Encoding]::ASCII.GetBytes('x')))
+        ([AmonSS.Native.ProcessMemory]::Scan(999999, $m, 1MB, [datetime]::UtcNow.AddSeconds(5))).Error | Should -Not -BeNullOrEmpty
+    }
+}

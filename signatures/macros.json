@@ -1,0 +1,149 @@
+{
+  "clients": [
+    {
+      "schemaVersion": 1,
+      "id": "autohotkey",
+      "name": "AutoHotkey",
+      "category": "macro",
+      "description": "Software de macros o automatización: tenerlo instalado es normal; se informa para revisar las macros a mano.",
+      "openSource": false,
+      "loaders": [],
+      "references": [],
+      "keywords": [],
+      "falsePositives": [],
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+      "indicators": [
+        { "id": "autohotkey.string.1", "type": "string", "value": ">AUTOHOTKEY SCRIPT<", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://blog.nviso.eu/2023/07/20/the-soc-toolbox-analyzing-autohotkey-compiled-executables/", "note": "Nombre del recurso RCDATA que guarda el script en un .exe compilado con AutoHotkey (un 'clicker.exe' compilado lo tendria). Los nombres de recurso PE se guardan en UTF-16LE. Herramienta de uso doble.", "encodings": ["utf16le", "ascii"], "scopes": ["raw"] },
+        { "id": "autohotkey.path.1", "type": "path", "value": "AppData/Local/Programs/AutoHotkey", "strength": "weak", "provenance": "primary-source", "validated": true, "source": "https://www.autohotkey.com/docs/v2/Program.htm", "note": "Directorio por defecto de una instalación 'current user' de v2 (la de 'all users' va a Program Files, fuera de userHome).", "relativeTo": "userHome" }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "logitech-ghub",
+      "name": "Logitech G HUB",
+      "category": "macro",
+      "description": "Software de macros o automatización: tenerlo instalado es normal; se informa para revisar las macros a mano.",
+      "openSource": false,
+      "loaders": [],
+      "references": [],
+      "keywords": [],
+      "falsePositives": [],
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+      "indicators": [
+        { "id": "logitech-ghub.path.1", "type": "path", "value": "AppData/Local/LGHUB/settings.db", "strength": "weak", "provenance": "primary-source", "validated": true, "source": "https://support.logi.com/hc/en-us/articles/360048161973-Logitech-G-logo-loops-when-attempting-to-run-G-HUB", "note": "Soporte oficial de Logitech: los ajustes de G HUB están en C:\\Users\\[USERNAME]\\AppData\\Local\\LGHUB\\settings.db. Solo prueba que G HUB está instalado; las macros hay que revisarlas a mano.", "relativeTo": "userHome" }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "logitech-lgs",
+      "name": "Logitech Gaming Software",
+      "category": "macro",
+      "description": "Software de macros o automatización: tenerlo instalado es normal; se informa para revisar las macros a mano.",
+      "openSource": false,
+      "loaders": [],
+      "references": [],
+      "keywords": [],
+      "falsePositives": [],
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+      "indicators": [
+        { "id": "logitech-lgs.config.1", "type": "config", "value": "AppData/Local/Logitech/Logitech Gaming Software/profiles", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://steamcommunity.com/discussions/forum/12/1743346190285531465", "note": "Foro de Steam (2018) citando el foro de Logitech.", "relativeTo": "userHome" }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "razer-synapse",
+      "name": "Razer Synapse 3",
+      "category": "macro",
+      "description": "Software de macros o automatización: tenerlo instalado es normal; se informa para revisar las macros a mano.",
+      "openSource": false,
+      "loaders": [],
+      "references": [],
+      "keywords": [],
+      "falsePositives": [],
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+      "indicators": [
+        { "id": "razer-synapse.path.1", "type": "path", "value": "AppData/Local/Razer/Synapse3/Log/Razer Synapse 3.log", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/tempusernamedduck/screenshare-tool/HEAD/Screenshare%20Tool/checks/macros/macros.c", "note": "La herramienta busca 'MacroClient:Delete' (macro borrada) y 'turbo: true' en este log.", "relativeTo": "userHome" }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "steelseries",
+      "name": "SteelSeries Engine 3",
+      "category": "macro",
+      "description": "Software de macros o automatización: tenerlo instalado es normal; se informa para revisar las macros a mano.",
+      "openSource": false,
+      "loaders": [],
+      "references": [],
+      "keywords": [],
+      "falsePositives": [],
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+      "indicators": [
+        { "id": "steelseries.config.1", "type": "config", "value": "AppData/Roaming/steelseries-engine-3-client", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/tempusernamedduck/screenshare-tool/HEAD/Screenshare%20Tool/checks/macros/macros.c", "note": "La herramienta revisa 'Session Storage\\000003.log' dentro de esta carpeta.", "relativeTo": "userHome" }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "roccat-swarm",
+      "name": "ROCCAT Swarm",
+      "category": "macro",
+      "description": "Software de macros o automatización: tenerlo instalado es normal; se informa para revisar las macros a mano.",
+      "openSource": false,
+      "loaders": [],
+      "references": [],
+      "keywords": [],
+      "falsePositives": [],
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+      "indicators": [
+        { "id": "roccat-swarm.path.1", "type": "path", "value": "AppData/Roaming/ROCCAT/SWARM/macro/macro_list.dat", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/tempusernamedduck/screenshare-tool/HEAD/Screenshare%20Tool/checks/macros/macros.c", "note": "También custom_macro_list.dat.", "relativeTo": "userHome" }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "redragon",
+      "name": "Redragon Gaming Mouse",
+      "category": "macro",
+      "description": "Software de macros o automatización: tenerlo instalado es normal; se informa para revisar las macros a mano.",
+      "openSource": false,
+      "loaders": [],
+      "references": [],
+      "keywords": [],
+      "falsePositives": [],
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+      "indicators": [
+        { "id": "redragon.path.1", "type": "path", "value": "AppData/Roaming/REDRAGON/GamingMouse/macro.ini", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/tempusernamedduck/screenshare-tool/HEAD/Screenshare%20Tool/checks/macros/macros.c", "relativeTo": "userHome" }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "asus-armoury",
+      "name": "ASUS ROG Armoury",
+      "category": "macro",
+      "description": "Software de macros o automatización: tenerlo instalado es normal; se informa para revisar las macros a mano.",
+      "openSource": false,
+      "loaders": [],
+      "references": [],
+      "keywords": [],
+      "falsePositives": [],
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+      "indicators": [
+        { "id": "asus-armoury.config.1", "type": "config", "value": "Documents/ASUS/ROG/ROG Armoury/common/macro", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/tempusernamedduck/screenshare-tool/HEAD/Screenshare%20Tool/checks/macros/macros.c", "note": "Archivos .GMAC. Documents puede estar redirigido a OneDrive.", "relativeTo": "userHome" }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "corsair-icue",
+      "name": "Corsair iCUE",
+      "category": "macro",
+      "description": "Software de macros o automatización: tenerlo instalado es normal; se informa para revisar las macros a mano.",
+      "openSource": false,
+      "loaders": [],
+      "references": [],
+      "keywords": [],
+      "falsePositives": [],
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+      "indicators": [
+        { "id": "corsair-icue.config.1", "type": "config", "value": "AppData/Roaming/Corsair/CUE Backup", "strength": "weak", "provenance": "primary-source", "validated": true, "source": "https://www.corsair.com/ww/zh/explorer/patch-notes/icue/icue-521107/", "note": "Notas oficiales de iCUE 5.21: copias de seguridad en esa carpeta. Solo prueba que iCUE está instalado.", "relativeTo": "userHome" }
+      ]
+    }
+  ]
+}

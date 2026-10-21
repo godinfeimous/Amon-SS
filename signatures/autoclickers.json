@@ -1,0 +1,71 @@
+{
+  "clients": [
+    {
+      "schemaVersion": 1,
+      "id": "jnativehook",
+      "name": "JNativeHook (librería de hooks globales)",
+      "category": "dual-use",
+      "description": "Herramienta o librería de uso dual: también tiene usos legítimos.",
+      "openSource": false,
+      "loaders": [],
+      "references": [],
+      "keywords": [],
+      "falsePositives": [],
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+      "indicators": [
+        { "id": "jnativehook.package.1", "type": "package", "value": "com/github/kwhat/jnativehook/", "strength": "weak", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/kwhat/jnativehook/2.2/src/main/java/com/github/kwhat/jnativehook/DefaultLibraryLocator.java", "note": "Código oficial 2.2.x. La usan autoclickers en Java y también programas legitimos: su presencia en un JAR de mods es sospechosa, no prueba nada." },
+        { "id": "jnativehook.package.2", "type": "package", "value": "org/jnativehook/", "strength": "weak", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/kwhat/jnativehook/2.1/src/java/org/jnativehook/DefaultLibraryLocator.java", "note": "Paquete de las versiones 1.x-2.1. 2.0/2.1 extraen la DLL a java.io.tmpdir como 'JNativeHook-<versión>.<arch>.dll' sin borrarla; 1.1 usa createTempFile('JNativeHook_') con deleteOnExit; 2.2 la extrae junto al JAR." }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "speed-autoclicker",
+      "name": "Speed AutoClicker",
+      "category": "autoclicker",
+      "description": "Autoclicker externo.",
+      "openSource": false,
+      "loaders": [],
+      "references": [],
+      "keywords": [],
+      "falsePositives": [],
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+      "indicators": [
+        { "id": "speed-autoclicker.config.1", "type": "config", "value": "AppData/Roaming/SpeedAutoClickerV3", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://www.speedautoclicker.net/faq", "note": "FAQ oficial: escribir '%appdata%' y buscar la carpeta 'SpeedAutoClickerV3' para reiniciarlo. Prueba instalación o uso pasado, no uso durante la partida.", "relativeTo": "userHome" }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "op-autoclicker",
+      "name": "OP Auto Clicker",
+      "category": "autoclicker",
+      "description": "Autoclicker externo.",
+      "openSource": false,
+      "loaders": [],
+      "references": [],
+      "keywords": [],
+      "falsePositives": [],
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+      "indicators": [
+        { "id": "op-autoclicker.sha256.1", "type": "sha256", "value": "3406f9805dac7d055c2d0eb3f0c0dcd9caa18b180db46378c408a203438cb57b", "strength": "strong", "provenance": "secondary", "validated": false, "source": "https://community.chocolatey.org/packages/autoclicker", "note": "Checksum sha256 de AutoClicker.exe en el paquete Chocolatey 3.0.0.20230225 (descarga oficial de SourceForge). Solo esa compilación. El nombre AutoClicker.exe lo comparte Speed AutoClicker: no usar el nombre como firma." }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "generic-autoclicker",
+      "name": "Autoclickers externos (varios)",
+      "category": "autoclicker",
+      "description": "Autoclicker externo.",
+      "openSource": false,
+      "loaders": [],
+      "references": [],
+      "keywords": ["autoclicker", "auto clicker", "autoclick"],
+      "falsePositives": [],
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+      "indicators": [
+        { "id": "generic-autoclicker.string.1", "type": "string", "value": "Sapphire LITE Clicker", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/spokwn/BAM-parser/HEAD/yara/yara.cpp", "note": "YARA 'Specifics A' ($p).", "encodings": ["ascii", "utf16le"], "scopes": ["raw"] },
+        { "id": "generic-autoclicker.string.2", "type": "string", "value": "The clicker code was done by Nightbot. I skidded it :)", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/spokwn/BAM-parser/HEAD/yara/yara.cpp", "note": "YARA 'Specifics A' ($l).", "encodings": ["ascii", "utf16le"], "scopes": ["raw"] },
+        { "id": "generic-autoclicker.string.3", "type": "string", "value": "me/tojatta/clicker", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/Jammy108/AstroSS/HEAD/Astro/config.py", "note": "AstroSS 'Tojatta Clicker #1' (clicker Java antiguo).", "scopes": ["raw", "entries"] }
+      ]
+    }
+  ]
+}

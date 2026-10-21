@@ -78,6 +78,7 @@ function Get-AmonEventSources {
     $src = @{
         SecurityAccessible = $false; SecurityOldestUtc = $null; Audit = (Get-AmonAuditProcessCreation)
         Security4688 = @(); Security1102 = @(); System104 = @(); Defender = @(); RunEntries = @(); Truncated4688 = $false
+        System7045 = @(); Ntfs501 = @(); DefenderConfig = @(); AppCrash = @()
         Errors = [System.Collections.Generic.List[string]]::new()
     }
     $since = $Context.SinceUtc.ToLocalTime()
@@ -122,6 +123,32 @@ function Get-AmonEventSources {
                 [pscustomobject]@{ TimeCreated = $_.TimeCreated.ToUniversalTime(); EventId = $_.Id; Threat = (Get-AmonEventDataValue -Xml $x -Name 'Threat Name'); Path = (Get-AmonEventDataValue -Xml $x -Name 'Path'); Action = (Get-AmonEventDataValue -Xml $x -Name 'Action Name') }
             })
     } catch { if (-not (Test-AmonNoEvents $_)) { $src.Errors.Add("Defender: $($_.Exception.Message)") } }
+    # Eventos activados por defecto que delatan preparación o evasión (sin administrador).
+    $named = { param($ev) $x = [xml]$ev.ToXml(); $m = @{}; foreach ($d in @($x.Event.EventData.Data)) { if ($d -and $d.Name) { $m[$d.Name] = [string]$d.'#text' } }; $m }
+    try {
+        $src.System7045 = @(Get-WinEvent -FilterHashtable @{ LogName = 'System'; ProviderName = 'Service Control Manager'; Id = 7045; StartTime = $since } -MaxEvents 500 -ErrorAction Stop | ForEach-Object {
+                $d = & $named $_
+                [pscustomobject]@{ TimeCreated = $_.TimeCreated.ToUniversalTime(); ServiceName = $d['ServiceName']; ImagePath = $d['ImagePath']; ServiceType = $d['ServiceType']; StartType = $d['StartType'] }
+            })
+    } catch { if (-not (Test-AmonNoEvents $_)) { $src.Errors.Add("7045: $($_.Exception.Message)") } }
+    try {
+        $src.Ntfs501 = @(Get-WinEvent -FilterHashtable @{ LogName = 'Microsoft-Windows-Ntfs/Operational'; Id = 501; StartTime = $since } -MaxEvents 2000 -ErrorAction Stop | ForEach-Object {
+                $d = & $named $_
+                [pscustomobject]@{ TimeCreated = $_.TimeCreated.ToUniversalTime(); ProcessName = $d['ProcessName']; VolumeName = $d['VolumeName']; JournalId = $d['JournalId'] }
+            })
+    } catch { if (-not (Test-AmonNoEvents $_)) { $src.Errors.Add("Ntfs 501: $($_.Exception.Message)") } }
+    try {
+        $src.DefenderConfig = @(Get-WinEvent -FilterHashtable @{ LogName = 'Microsoft-Windows-Windows Defender/Operational'; Id = 5001, 5007; StartTime = $since } -MaxEvents 500 -ErrorAction Stop | ForEach-Object {
+                $d = & $named $_
+                [pscustomobject]@{ TimeCreated = $_.TimeCreated.ToUniversalTime(); EventId = $_.Id; NewValue = $d['New Value']; OldValue = $d['Old Value'] }
+            })
+    } catch { if (-not (Test-AmonNoEvents $_)) { $src.Errors.Add("Defender 5001/5007: $($_.Exception.Message)") } }
+    try {
+        $src.AppCrash = @(Get-WinEvent -FilterHashtable @{ LogName = 'Application'; ProviderName = 'Application Error'; Id = 1000; StartTime = $since } -MaxEvents 500 -ErrorAction Stop | ForEach-Object {
+                $d = & $named $_
+                [pscustomobject]@{ TimeCreated = $_.TimeCreated.ToUniversalTime(); AppName = $d['AppName']; AppPath = $d['AppPath']; ModuleName = $d['ModuleName']; ModulePath = $d['ModulePath']; ExceptionCode = $d['ExceptionCode'] }
+            })
+    } catch { if (-not (Test-AmonNoEvents $_)) { $src.Errors.Add("Application Error 1000: $($_.Exception.Message)") } }
     $runs = [System.Collections.Generic.List[object]]::new()
     foreach ($rk in $script:RunKeys) {
         try {
@@ -141,7 +168,7 @@ function Invoke-AmonEventAnalysis {
     [CmdletBinding()]
     param([Parameter(Mandatory = $true)]$Context, [hashtable]$Injected)
     $res = New-AmonModuleResult -Module 'Events' -DisplayName 'Windows Event Analysis'
-    $res.Scope.Add('Registros Security (4688, 1102), System (104), Windows Defender (1116/1117); claves Run/RunOnce.')
+    $res.Scope.Add('Registros Security (4688, 1102), System (104, 7045), Ntfs/Operational (501), Application (1000), Windows Defender (1116/1117, 5001, 5007); claves Run/RunOnce.')
     $src = if ($Injected) { $Injected } else { Get-AmonEventSources -Context $Context }
     foreach ($e in @($src.Errors)) { $res.Warnings.Add($e) }
     $res.Data['Audit'] = $src.Audit
@@ -220,6 +247,74 @@ function Invoke-AmonEventAnalysis {
         $res.Findings.Add((New-AmonFinding -Module 'Events' -Category 'DefenderDetection' -Title "Windows Defender detectó '$($d.Threat)'" -Status DETECTED -Severity Medium -Confidence High `
                     -Path $d.Path -TimestampUtc $d.TimeCreated -Indicator $d.Threat -IndicatorType 'defender' -Justification "Defender registró una detección relacionada con la revisión (acción: $($d.Action))." `
                     -FalsePositives @('Defender clasifica como HackTool algunas herramientas legítimas (inyectores de mods, autoclickers de accesibilidad).')))
+    }
+    # Servicios y drivers instalados en el periodo (7045): un driver desde una carpeta de usuario
+    # es raro y es la forma de cargar herramientas a nivel de núcleo.
+    foreach ($s in @($src.System7045)) {
+        $res.ArtifactsReviewed++
+        $img = [string]$s.ImagePath
+        if ($img -match '^\\\?\?\\') { $img = $img.Substring(4) }
+        $img = [Environment]::ExpandEnvironmentVariables($img.Trim('"'))
+        $userFolder = Test-AmonUserWritablePath -Path $img
+        $kw = Test-AmonKeywordMatch -Text "$($s.ServiceName) $img" -Keywords (@($indicators) + @($clientKeywords))
+        if (-not $userFolder -and -not $kw) { continue }
+        $res.Artifacts.Add([pscustomobject]@{ EventId = 7045; TimeUtc = $s.TimeCreated; Process = $img; Parent = $null; User = $null; CommandLine = $null; Relevance = $(if ($kw) { "palabra clave '$kw'" } else { 'desde carpeta de usuario' }); Description = "Servicio o driver instalado: $($s.ServiceName) ($($s.ServiceType))" })
+        $res.Events.Add((New-AmonEvent -TimestampUtc $s.TimeCreated -Type 'Servicio o driver instalado (7045)' -Kind Creation -Source 'System 7045' -Path $img -Confidence High -Description "$($s.ServiceName); $($s.ServiceType)"))
+        if ($tool = Get-AmonScreenshareTool -Context $Context -Text "$($s.ServiceName) $img") {
+            $res.Findings.Add((New-AmonFinding -Module 'Events' -Category 'ScreenshareTool' -Title "Driver de la herramienta de SS $($tool): $($s.ServiceName)" -Status INFO -Severity Info -Confidence High `
+                        -Path $img -TimestampUtc $s.TimeCreated -Indicator $tool -IndicatorType 'event 7045' -Justification 'Coincide con una herramienta de SS conocida (knownScreenshareTools): es un rastro del propio staff, no del jugador.'))
+            continue
+        }
+        $res.Findings.Add((New-AmonFinding -Module 'Events' -Category 'DriverInstalled' -Title "Servicio o driver instalado desde una carpeta de usuario: $($s.ServiceName)" -Status INCONCLUSIVE -Severity Medium -Confidence Medium `
+                    -Path $img -TimestampUtc $s.TimeCreated -Indicator "$($s.ServiceType); $($s.StartType)" -IndicatorType 'event 7045' `
+                    -Justification ("Windows registró la instalación del servicio '{0}' el {1} con el binario en {2}. Los drivers permiten ocultar o manipular procesos y memoria." -f $s.ServiceName, (Format-AmonTimestamp $s.TimeCreated), $img) `
+                    -FalsePositives @('Las herramientas de SS (Ocean, Echo...) y algunos antitrampas o utilidades de hardware instalan su propio driver: comprueba si es la que usó el staff.')))
+        if ((Test-AmonLocalPath -Path $img) -and [IO.File]::Exists($img)) { Add-AmonEvidencePath -Context $Context -Path $img -Source 'Events (7045)' -Reason 'driver instalado' }
+    }
+    # USN Journal eliminado (Ntfs/Operational 501). SearchIndexer lo registra a menudo sin borrar nada.
+    foreach ($u in @($src.Ntfs501)) {
+        $res.ArtifactsReviewed++
+        if ([string]$u.ProcessName -match '^(?i)SearchIndexer' -or -not (Test-AmonInWindow -Context $Context -Utc $u.TimeCreated)) { continue }
+        $res.Events.Add((New-AmonEvent -TimestampUtc $u.TimeCreated -Type 'USN Journal eliminado (Ntfs 501)' -Kind Deletion -Source 'Ntfs 501' -Path $u.ProcessName -Confidence High -Description "Volumen $($u.VolumeName)"))
+        $res.Findings.Add((New-AmonFinding -Module 'Events' -Category 'UsnJournalDeleted' -Title "USN Journal de $($u.VolumeName) eliminado por $($u.ProcessName)" -Status DETECTED -Severity High -Confidence High `
+                    -TimestampUtc $u.TimeCreated -Indicator "$($u.ProcessName) - Journal $($u.JournalId)" -IndicatorType 'event Ntfs 501' `
+                    -Justification ("NTFS registró que {0} eliminó el USN Journal de {1} el {2}. Borrar el journal destruye el historial de creación, borrado y renombrado de archivos." -f $u.ProcessName, $u.VolumeName, (Format-AmonTimestamp $u.TimeCreated)) `
+                    -FalsePositives @('Herramientas de mantenimiento de disco o de optimización que recrean el journal.')))
+    }
+    # Defender: exclusiones añadidas (5007) y protección en tiempo real desactivada (5001).
+    foreach ($d in @($src.DefenderConfig)) {
+        $res.ArtifactsReviewed++
+        if (-not (Test-AmonInWindow -Context $Context -Utc $d.TimeCreated)) { continue }
+        if ($d.EventId -eq 5007 -and [string]$d.NewValue -match '\\Exclusions\\(Paths|Processes|Extensions)\\(.+?)\s*=') {
+            $what = $Matches[2]
+            $res.Events.Add((New-AmonEvent -TimestampUtc $d.TimeCreated -Type 'Exclusión añadida a Windows Defender' -Kind System -Source 'Defender 5007' -Path $what -Confidence High))
+            $res.Findings.Add((New-AmonFinding -Module 'Events' -Category 'DefenderExclusion' -Title "Exclusión añadida a Windows Defender ($($Matches[1]))" -Status INCONCLUSIVE -Severity Medium -Confidence High `
+                        -Path $(if ($Matches[1] -eq 'Paths') { $what } else { $null }) -TimestampUtc $d.TimeCreated -Indicator $what -IndicatorType 'event 5007' `
+                        -Justification "Defender dejó de vigilar '$what' desde el $(Format-AmonTimestamp $d.TimeCreated). Es habitual para que el antivirus no borre clientes, inyectores o autoclickers." `
+                        -FalsePositives @('Exclusiones legítimas de juegos, herramientas de desarrollo o software que el antivirus bloquea por error.')))
+        } elseif ($d.EventId -eq 5001) {
+            $res.Events.Add((New-AmonEvent -TimestampUtc $d.TimeCreated -Type 'Protección en tiempo real de Defender desactivada' -Kind System -Source 'Defender 5001' -Confidence High))
+            $res.Findings.Add((New-AmonFinding -Module 'Events' -Category 'DefenderDisabled' -Title 'Se desactivó la protección en tiempo real de Windows Defender' -Status INCONCLUSIVE -Severity Low -Confidence High `
+                        -TimestampUtc $d.TimeCreated -Indicator 'evento 5001' -IndicatorType 'event' `
+                        -Justification "Defender registró la desactivación el $(Format-AmonTimestamp $d.TimeCreated)." `
+                        -FalsePositives @('Otro antivirus instalado desactiva Defender.', 'Desactivación temporal para instalar un programa.')))
+        }
+    }
+    # Caídas de Java o de launchers causadas por una DLL ajena al runtime y a Windows.
+    $sysDirs = @($env:SystemRoot, $env:ProgramFiles, ${env:ProgramFiles(x86)}) | Where-Object { $_ } | ForEach-Object { $_.TrimEnd('\').ToUpperInvariant() + '\' }
+    foreach ($c in @($src.AppCrash)) {
+        $res.ArtifactsReviewed++
+        if ([string]$c.AppName -notin $launchers -or -not (Test-AmonInWindow -Context $Context -Utc $c.TimeCreated)) { continue }
+        $mod = [string]$c.ModulePath
+        $appHome = if ($c.AppPath) { (Split-Path -Parent (Split-Path -Parent ([string]$c.AppPath))).ToUpperInvariant() + '\' } else { $null }
+        $foreign = $mod -and -not ($sysDirs | Where-Object { $mod.ToUpperInvariant().StartsWith($_) }) -and -not ($appHome -and $mod.ToUpperInvariant().StartsWith($appHome))
+        $res.Events.Add((New-AmonEvent -TimestampUtc $c.TimeCreated -Type "$($c.AppName) se cerró por un error" -Kind System -Source 'Application 1000' -Path $c.AppPath -Confidence High -Description "Módulo: $($c.ModuleName); excepción $($c.ExceptionCode)"))
+        if (-not $foreign) { continue }
+        $res.Findings.Add((New-AmonFinding -Module 'Events' -Category 'JavaCrashForeignModule' -Title "$($c.AppName) se cerró por un fallo en una DLL ajena: $($c.ModuleName)" -Status INCONCLUSIVE -Severity Medium -Confidence Medium `
+                    -Path $mod -TimestampUtc $c.TimeCreated -Indicator "$($c.ModuleName) (excepción $($c.ExceptionCode))" -IndicatorType 'event 1000' `
+                    -Justification ("Windows registró que {0} se cerró el {1} por un fallo dentro de {2}, que no es del runtime de Java ni de Windows. Las DLL inyectadas en el juego suelen provocar estos cierres." -f $c.AppName, (Format-AmonTimestamp $c.TimeCreated), $mod) `
+                    -FalsePositives @('Nativas de mods (chat de voz, grabación) o superposiciones (Discord, OBS, RivaTuner) también pueden fallar.')))
+        if ((Test-AmonLocalPath -Path $mod) -and [IO.File]::Exists($mod)) { Add-AmonEvidencePath -Context $Context -Path $mod -Source 'Events (1000)' -Reason 'DLL que hizo caer a Java' }
     }
     foreach ($r in @($src.RunEntries)) {
         $exe = Get-AmonRunValueExecutable $r.Value

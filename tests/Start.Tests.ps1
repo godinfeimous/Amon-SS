@@ -4,31 +4,38 @@
     $script:Exe = (Get-Process -Id $PID).Path
 }
 
-Describe 'Punto de entrada: modo interactivo con entrada redirigida' -Tag 'Integration' {
-    It 'sin consentimiento no analiza nada' {
+Describe 'Punto de entrada: revisión automática (entrada redirigida)' -Tag 'Integration' {
+    # Con la entrada redirigida cada "tecla" llega como una línea. -Modules acota el escaneo para
+    # que la prueba sea rápida; -OutputPath evita escribir en la carpeta de reportes del usuario.
+    It 'arranca sola: sin consentimiento, escanea, exporta el reporte y sale con una tecla' {
         $ErrorActionPreference = 'Continue'
-        $out = "n`n" | & $script:Exe -NoProfile -ExecutionPolicy Bypass -File $script:Start -NoAnimation 2>&1
-        ($out -join "`n") | Should -Match 'Sin consentimiento'
-        ($out -join "`n") | Should -Not -Match 'MAIN MENU'
+        $dir = Join-Path $TestDrive 'auto'
+        $out = "`nq`n" | & $script:Exe -NoProfile -ExecutionPolicy Bypass -File $script:Start -Modules Recent -OutputPath $dir -NoAnimation 2>&1
+        $LASTEXITCODE | Should -Be 0
+        $text = $out -join "`n"
+        $text | Should -Not -Match 'CONSENTIMIENTO'
+        $text | Should -Match 'DETECTION & CORRELATION'
+        $text | Should -Not -Match '@\{'
+        @(Get-ChildItem $dir -Filter 'AMON-*.html').Count | Should -Be 1
+        @(Get-ChildItem $dir -Filter 'AMON-*.sha256').Count | Should -Be 1
     }
 
-    It 'con consentimiento muestra el menú, sale limpiamente y no filtra objetos a la salida' {
+    It 'un Enter en el menú final no cierra; D muestra el detalle y Q sale' {
         $ErrorActionPreference = 'Continue'
-        $out = "s`nPrueba`n08`n00`n" | & $script:Exe -NoProfile -ExecutionPolicy Bypass -File $script:Start -NoAnimation 2>&1
+        $out = "`n`nd`nq`n" | & $script:Exe -NoProfile -ExecutionPolicy Bypass -File $script:Start -Modules Recent -OutputPath (Join-Path $TestDrive 'auto2') -NoAnimation 2>&1
+        ($out -join "`n") | Should -Match 'RECENT FILES'
+    }
+
+    It 'el menú avanzado se maneja con una sola tecla por opción' {
+        $ErrorActionPreference = 'Continue'
+        $out = "`nm`n7`nq`nq`n" | & $script:Exe -NoProfile -ExecutionPolicy Bypass -File $script:Start -Modules Recent -OutputPath (Join-Path $TestDrive 'auto3') -NoAnimation 2>&1
         $text = $out -join "`n"
-        $text | Should -Match 'MAIN MENU'
-        $text | Should -Match 'RECENT FILES'
-        $text | Should -Match 'Sesión cerrada'
-        $text | Should -Not -Match '@\{'
+        $text | Should -Match 'MÁS OPCIONES'
+        $text | Should -Match 'USERASSIST'
     }
 }
 
-Describe 'Punto de entrada: menú principal' -Tag 'Integration' {
-    It 'un Enter vacío en el menú principal no cierra la sesión' {
-        $ErrorActionPreference = 'Continue'
-        $out = "s`nPrueba`n`n08`n00`n" | & $script:Exe -NoProfile -ExecutionPolicy Bypass -File $script:Start -NoAnimation 2>&1
-        ($out -join "`n") | Should -Match 'RECENT FILES'
-    }
+Describe 'Punto de entrada: seguridad del menú' -Tag 'Integration' {
 
     It 'no construye código a partir de lo que escribe el usuario' {
         # Una ruta con comillas tipográficas (’) rompía [scriptblock]::Create y permitía inyectar código.
@@ -37,12 +44,12 @@ Describe 'Punto de entrada: menú principal' -Tag 'Integration' {
 }
 
 Describe 'Punto de entrada: modo no interactivo' -Tag 'Integration' {
-    It 'sin -Consent no analiza nada y termina con código 2' {
+    It 'no necesita -Consent: el consentimiento lo cubren los términos de la SS del servidor' {
         # stderr de un ejecutable con 2>&1 se convierte en ErrorRecord: no debe detener la prueba.
         $ErrorActionPreference = 'Continue'
-        $out = & $script:Exe -NoProfile -ExecutionPolicy Bypass -File $script:Start -Scan Minecraft 2>&1
-        $LASTEXITCODE | Should -Be 2
-        ($out -join ' ') | Should -Match 'Consent'
+        $out = & $script:Exe -NoProfile -ExecutionPolicy Bypass -File $script:Start -Scan Recent -NoAnimation 2>&1
+        $LASTEXITCODE | Should -Be 0
+        ($out -join ' ') | Should -Match 'Recent Files'
     }
 
     It '-VerifyManifest termina con 1 si un reporte fue alterado' {

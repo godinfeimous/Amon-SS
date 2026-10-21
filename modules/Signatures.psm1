@@ -22,7 +22,7 @@
 Import-Module (Join-Path $PSScriptRoot 'Core.psm1') -DisableNameChecking
 Import-Module (Join-Path $PSScriptRoot 'Jar.psm1') -DisableNameChecking
 
-$script:AllowedTypes = @('package', 'entry', 'entrypoint', 'manifest', 'modid', 'config', 'path', 'log', 'string', 'hex', 'sha256', 'versionId', 'jvmArg')
+$script:AllowedTypes = @('package', 'entry', 'entrypoint', 'manifest', 'modid', 'config', 'path', 'log', 'string', 'hex', 'sha256', 'versionId', 'jvmArg', 'filename', 'memory')
 $script:AllowedProvenance = @('primary-source', 'secondary', 'user-provided', 'sample-verified')
 $script:MediaExt = @('.png', '.ogg', '.jpg', '.jpeg', '.gif', '.wav', '.mp3', '.ttf', '.otf', '.nbt', '.webp', '.bmp', '.ico', '.psd')
 $script:ArchiveExt = @('.jar', '.zip', '.litemod')
@@ -30,6 +30,7 @@ $script:TypeLabel = @{
     package = 'paquete Java'; entry = 'entrada del JAR'; entrypoint = 'clase de entrada'; manifest = 'MANIFEST.MF'
     modid = 'id de mod'; config = 'carpeta de configuración'; path = 'ruta'; log = 'línea de log'; string = 'cadena'
     hex = 'firma binaria'; sha256 = 'SHA-256'; versionId = 'perfil de versión'; jvmArg = 'argumento JVM'
+    filename = 'nombre de archivo'; memory = 'cadena en memoria'
 }
 
 #region Carga y validación de definiciones
@@ -139,7 +140,7 @@ function Get-AmonSignatureSet {
     }
     $matcher = New-Object AmonSS.Native.PatternMatcher (, $patterns.ToArray())
 
-    $packages = @{}; $entries = @{}; $entrypoints = @{}; $entrypointPaths = @{}; $modids = @{}; $sha = @{}
+    $packages = @{}; $entries = @{}; $entrypoints = @{}; $entrypointPaths = @{}; $modids = @{}; $sha = @{}; $fileNames = @{}
     $manifest = [System.Collections.Generic.List[object]]::new()
     $add = { param($table, $key, $value) if (-not $table.ContainsKey($key)) { $table[$key] = [System.Collections.Generic.List[object]]::new() }; $table[$key].Add($value) }
     foreach ($ind in $inds) {
@@ -149,6 +150,9 @@ function Get-AmonSignatureSet {
             'entrypoint' { & $add $entrypoints $ind.Value $ind; & $add $entrypointPaths ($ind.Value.Replace('.', '/') + '.class') $ind }
             'modid' { & $add $modids $ind.Value.ToLowerInvariant() $ind }
             'sha256' { & $add $sha $ind.Value.ToLowerInvariant() $ind }
+            # Nombre exacto de un ejecutable o DLL (autoclickers, inyectores, macros): lo usan
+            # Prefetch, BAM, PCA, ShimCache y procesos.
+            'filename' { & $add $fileNames $ind.Value.Trim().ToLowerInvariant() $ind }
             'manifest' {
                 $idx = $ind.Value.IndexOf(':')
                 if ($idx -gt 0) { $manifest.Add([pscustomobject]@{ Key = $ind.Value.Substring(0, $idx).Trim(); Value = $ind.Value.Substring($idx + 1).Trim(); Indicator = $ind }) }
@@ -180,6 +184,7 @@ function Get-AmonSignatureSet {
         Logs            = @($inds | Where-Object Type -EQ 'log')
         VersionIds      = @($inds | Where-Object Type -EQ 'versionId')
         JvmArgs         = @($inds | Where-Object Type -EQ 'jvmArg')
+        FileNames       = $fileNames
         Keywords        = $keywords
     }
 }
@@ -199,7 +204,7 @@ function Test-AmonSignatureSet {
         if ($seenClients.ContainsKey($c.Id)) { $errors.Add("${where}: id de cliente duplicado (también en $($seenClients[$c.Id]))") } else { $seenClients[$c.Id] = $c.File }
         if (-not $c.Name) { $errors.Add("${where}: falta 'name'") }
         if ($c.SchemaVersion -ne 1) { $errors.Add("${where}: schemaVersion debe ser 1") }
-        if ($c.Category -notin @('cheat-client', 'dual-use', 'framework')) { $errors.Add("${where}: categoría inválida '$($c.Category)'") }
+        if ($c.Category -notin @('cheat-client', 'dual-use', 'framework', 'autoclicker', 'macro', 'injector', 'bypass')) { $errors.Add("${where}: categoría inválida '$($c.Category)'") }
         $seenInd = @{}
         foreach ($i in $c.Indicators) {
             $iw = "$where/$($i.Id)"
@@ -427,6 +432,7 @@ function Get-AmonSignatureDetections {
         $status = if ($conf -eq 'Low') { 'INCONCLUSIVE' } else { 'DETECTED' }
         $severity = 'Low'
         if ($client.Category -ne 'dual-use' -and $status -eq 'DETECTED') { $severity = if ($conf -eq 'High' -and $client.Category -eq 'cheat-client') { 'High' } else { 'Medium' } }
+        if ($client.Category -eq 'macro') { $status = 'INFO'; $severity = 'Info' }
         $groups = @($keep | ForEach-Object { $_.Indicator.Group } | Where-Object { $_ } | Select-Object -Unique)
 
         $j = "{0} indicador(es) coincidente(s): {1} validado(s) con fuente pública y {2} sin validar." -f $keep.Count, $validated.Count, $unvalidated.Count
@@ -560,6 +566,8 @@ function New-AmonClientFinding {
     if ($Category -eq 'ClientConfig' -and $conf -eq 'High') { $conf = 'Medium' }
     $status = if ($conf -eq 'Low') { 'INCONCLUSIVE' } else { 'DETECTED' }
     $severity = if ($client.Category -eq 'dual-use' -or $status -ne 'DETECTED') { 'Low' } elseif ($conf -eq 'High') { 'High' } else { 'Medium' }
+    # Software de macros: tenerlo instalado es normal; se informa para que el staff revise las macros.
+    if ($client.Category -eq 'macro') { $status = 'INFO'; $severity = 'Info' }
     $j = $Base
     if (-not $validated.Count) { $j += ' Indicadores sin validar (fuente secundaria o del usuario): requieren comprobación manual.' }
     if ($client.Category -eq 'dual-use') { $j += ' Herramienta de uso dual: muchos servidores la permiten.' }
@@ -787,7 +795,7 @@ function Invoke-AmonSignatureAnalysis {
         if ($res.Data['ClientsWithoutSignatures'].Count) {
             $res.Limitations.Add('Sin firmas verificables (el escaneo no puede descartarlos): ' + ($res.Data['ClientsWithoutSignatures'] -join ', ') + '.')
         }
-        $res.Limitations.Add('Los clientes inyectables o cargados desde memoria pueden no dejar archivos en las carpetas analizadas; el escaneo de memoria está fuera del alcance de esta herramienta.')
+        $res.Limitations.Add('Los clientes inyectables o cargados desde memoria pueden no dejar archivos en las carpetas analizadas: para ellos está el escáner de memoria de Java (con Minecraft abierto).')
     }
     Update-AmonProgress -Context $Context -Percent 100 -Detail 'firmas' -Count $res.ArtifactsReviewed
     return Complete-AmonModuleResult -Result $res
@@ -797,5 +805,5 @@ function Invoke-AmonSignatureAnalysis {
 
 Export-ModuleMember -Function @(
     'Get-AmonSignatureSet', 'Test-AmonSignatureSet', 'Invoke-AmonFileSignatureScan', 'Get-AmonSignatureDetections',
-    'Invoke-AmonSignatureAnalysis', 'Read-AmonLogText', 'Resolve-AmonIndicatorPath'
+    'Invoke-AmonSignatureAnalysis', 'Invoke-AmonConfigSignatureCheck', 'Read-AmonLogText', 'Resolve-AmonIndicatorPath'
 )

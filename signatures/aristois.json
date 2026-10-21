@@ -19,6 +19,7 @@
     { "id": "emc.entrypoint", "type": "entrypoint", "value": "me.deftware.launch.EarlyRiser", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/Moudoux/EMC/1.18.2/src/main/resources/fabric.mod.json" },
     { "id": "emc.mixins", "type": "entry", "value": "mixins.emc.json", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://api.github.com/repos/Moudoux/EMC/contents/src/main/resources?ref=1.18.2" },
     { "id": "emc.root", "type": "path", "value": "libraries/EMC", "relativeTo": "gameDir", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/Moudoux/EMC/1.18.2/src/main/java/me/deftware/client/framework/main/bootstrap/Bootstrap.java", "note": "EMC_ROOT = gameDir/libraries/EMC/<versión>/" },
-    { "id": "emc.log", "type": "log", "value": "Loading EMC v\\d+\\.\\d+", "match": "regex", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/Moudoux/EMC/1.18.2/src/main/java/me/deftware/client/framework/main/bootstrap/Bootstrap.java" }
+    { "id": "emc.log", "type": "log", "value": "Loading EMC v\\d+\\.\\d+", "match": "regex", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/Moudoux/EMC/1.18.2/src/main/java/me/deftware/client/framework/main/bootstrap/Bootstrap.java" },
+    { "id": "aristois.package.1", "type": "package", "value": "net/aristois/opencode/", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/Jammy108/AstroSS/HEAD/Astro/config.py", "note": "AstroSS 'Aristois Client'." }
   ]
 }

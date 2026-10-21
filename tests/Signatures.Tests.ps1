@@ -14,6 +14,29 @@ Describe 'Firmas: definiciones' -Tag 'Unit' {
         $errors | Should -BeNullOrEmpty
     }
 
+    It 'el software de macros instalado solo se informa (INFO), no cuenta como indicio' {
+        $dir = Join-Path $TestDrive 'sig-macro'
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+        '{ "schemaVersion": 1, "id": "macro-x", "name": "Macro X", "category": "macro", "indicators": [ { "id": "mx.cfg", "type": "config", "value": "MacroX/macros", "relativeTo": "userHome", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://example.org/macrox" } ] }' |
+            Set-Content -LiteralPath (Join-Path $dir 'macro-x.json') -Encoding UTF8
+        $set = Get-AmonSignatureSet -Path $dir
+        $home2 = Join-Path $TestDrive 'home-macro'
+        New-Item -ItemType Directory -Path (Join-Path $home2 'MacroX\macros') -Force | Out-Null
+        $res = New-AmonModuleResult -Module 'Signatures'
+        Invoke-AmonConfigSignatureCheck -Context (New-AmonTestContext) -Set $set -Base $home2 -RelativeTo 'userHome' -Label 'perfil' -Result $res
+        ($res.Findings | Where-Object ClientId -EQ 'macro-x').Status | Should -Be 'INFO'
+    }
+
+    It 'indexa los nombres de archivo de herramientas (tipo filename) sin distinguir mayúsculas' {
+        $dir = Join-Path $TestDrive 'sig-filename'
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+        '{ "schemaVersion": 1, "id": "clicker-x", "name": "Clicker X", "category": "autoclicker", "indicators": [ { "id": "cx.exe", "type": "filename", "value": "ClickerX.exe", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://example.org/clickerx" } ] }' |
+            Set-Content -LiteralPath (Join-Path $dir 'clicker-x.json') -Encoding UTF8
+        $set = Get-AmonSignatureSet -Path $dir
+        (Test-AmonSignatureSet -Set $set) | Should -BeNullOrEmpty
+        $set.FileNames['clickerx.exe'][0].ClientName | Should -Be 'Clicker X'
+    }
+
     It 'el validador detecta campos obligatorios ausentes aunque tengan valor por defecto' {
         $dir = Join-Path $TestDrive 'sig-missing'
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
@@ -40,7 +63,7 @@ Describe 'Firmas: definiciones' -Tag 'Unit' {
         foreach ($v in @('i_PlZygNMqUlcpwF', 'LNYlpCwym]p_m', 'NHTA1%n;R', 'Z;\<Rr', 'lTUPDuXI\JqjweAgtpN', 'pcwP\tDGFtvjQb', ";E#/hOgBaF.1d&l5['A", '|2||4|', '(YPg@BAJK,X', ']Cu2TF,', '?WHt4Y', 'F:tKChIta81qvEbZO', 'InJEkojpHG')) {
             Find-Ind 'doomsday' $v | Should -Not -BeNullOrEmpty -Because "la cadena '$v' debe existir tal cual"
         }
-        @($script:Set.Indicators | Where-Object { $_.ClientId -eq 'doomsday' -and $_.Type -eq 'string' }).Count | Should -Be 26
+        @($script:Set.Indicators | Where-Object { $_.ClientId -eq 'doomsday' -and $_.Type -eq 'string' -and $_.Provenance -eq 'user-provided' }).Count | Should -Be 26
     }
 
     It 'conserva las cadenas de Nova y Prestige' {
@@ -52,9 +75,14 @@ Describe 'Firmas: definiciones' -Tag 'Unit' {
         ($script:Set.Indicators | Where-Object { $_.Provenance -eq 'user-provided' -and $_.Validated }) | Should -BeNullOrEmpty
     }
 
-    It 'no inventa indicadores para clientes sin fuente verificable' {
+    It 'los indicadores de clientes cerrados citan una fuente pública y no se validan sin fuente primaria' {
         foreach ($id in 'vape', 'raven', 'inertia', 'sigma', 'rise', 'novoline') {
-            @($script:Set.Indicators | Where-Object ClientId -EQ $id).Count | Should -Be 0
+            $inds = @($script:Set.Indicators | Where-Object ClientId -EQ $id)
+            $inds.Count | Should -BeGreaterThan 0 -Because "$id tiene indicadores con fuente desde la investigación del 2026-10-21"
+            foreach ($i in $inds) {
+                $i.Source | Should -Match '^https?://' -Because "$($i.Id) debe citar su fuente"
+                if ($i.Validated) { $i.Provenance | Should -Be 'primary-source' -Because "$($i.Id) solo puede estar validado con fuente primaria" }
+            }
         }
     }
 }
@@ -104,6 +132,25 @@ Describe 'Firmas: escaneo de JAR' -Tag 'Unit' {
         $r = Invoke-AmonFileSignatureScan -Path $p -Set $script:Set -Context $ctx
         $r.Stats.Truncated | Should -BeTrue
         $r.Stats.NestedScanned | Should -BeLessThan 20
+    }
+
+    It 'identifica Raven bS (firmas nuevas de fuente primaria) aunque se haga pasar por KeystrokesMod' {
+        $p = New-AmonTestJar -Path (Join-Path $TestDrive 'mods\keystrokes-1.8.9.jar') -Entries ([ordered]@{
+                'mcmod.info'                                = '[{"modid":"keystrokes","name":"KeystrokesMod","version":"2.2"}]'
+                'mixins.raven.json'                         = '{}'
+                'keystrokesmod/module/impl/combat/Reach.class' = $script:Class
+            })
+        $d = (Invoke-AmonFileSignatureScan -Path $p -Set $script:Set -Context (New-AmonTestContext)).Detections | Where-Object ClientId -EQ 'raven'
+        $d.Status | Should -Be 'DETECTED'
+        $d.Confidence | Should -Be 'High'
+    }
+
+    It 'un KeystrokesMod legítimo (mismo modid) no se confunde con Raven' {
+        $p = New-AmonTestJar -Path (Join-Path $TestDrive 'mods\keystrokes-legit.jar') -Entries ([ordered]@{
+                'mcmod.info'                         = '[{"modid":"keystrokes","name":"KeystrokesMod","version":"3.0"}]'
+                'me/legit/keystrokes/KeystrokesMod.class' = $script:Class
+            })
+        @((Invoke-AmonFileSignatureScan -Path $p -Set $script:Set -Context (New-AmonTestContext)).Detections).Count | Should -Be 0
     }
 
     It 'una sola cadena corta no validada queda como no concluyente' {

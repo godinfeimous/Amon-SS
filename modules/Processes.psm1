@@ -161,6 +161,15 @@ function Get-AmonProcessSnapshot {
     }
 }
 
+function Test-AmonRuntimeAgent {
+    # instrument.dll es la parte nativa de java.lang.instrument y la JVM solo la carga cuando hay
+    # un agente Java. Si la línea de comandos no declara ninguno (-javaagent, -agentpath,
+    # -agentlib), el agente se añadió con el proceso ya en marcha.
+    param([string[]]$Modules = @(), [string]$CommandLine)
+    $loaded = @($Modules | Where-Object { $_ -and [IO.Path]::GetFileName($_) -ieq 'instrument.dll' }).Count -gt 0
+    return ($loaded -and ([string]$CommandLine) -notmatch '(?i)-(javaagent|agentpath|agentlib)[:=]')
+}
+
 function Invoke-AmonProcessAnalysis {
     <#
     .SYNOPSIS
@@ -183,6 +192,7 @@ function Invoke-AmonProcessAnalysis {
             $_.Name -in $launchers -or
             (Test-AmonKeywordMatch -Text $_.Name -Keywords $keywords) -or
             ($_.ExecutablePath -and (Test-AmonKeywordMatch -Text $_.ExecutablePath -Keywords $keywords)) -or
+            (Get-AmonToolByFileName -Context $Context -Name $_.Name) -or
             ($indicators.Count -and (Test-AmonKeywordMatch -Text ([string]$_.CommandLine) -Keywords $indicators))
         })
     $k = 0
@@ -215,6 +225,11 @@ function Invoke-AmonProcessAnalysis {
         $artifact = $res.Artifacts[$res.Artifacts.Count - 1]
         if ($p.CreationUtc -and (Test-AmonInWindow -Context $Context -Utc $p.CreationUtc)) {
             $res.Events.Add((New-AmonEvent -TimestampUtc $p.CreationUtc -Type 'Proceso iniciado (sigue en ejecución)' -Kind Execution -Source 'Processes' -Path $p.ExecutablePath -Confidence High -Description "$($p.Name) PID $($p.ProcessId)$(if ($details) { ' - ' + $details })"))
+        }
+        if ($tool = Get-AmonToolByFileName -Context $Context -Name $p.Name) {
+            $res.Findings.Add((New-AmonToolFinding -Module 'Processes' -Indicator $tool -Path $p.ExecutablePath -TimestampUtc $p.CreationUtc `
+                        -What "$($tool.ClientName) en ejecución (PID $($p.ProcessId))" -Detail "El proceso $($p.Name) está abierto ahora mismo (iniciado el $(Format-AmonTimestamp $p.CreationUtc))."))
+            if ($p.ExecutablePath) { Add-AmonEvidencePath -Context $Context -Path $p.ExecutablePath -Source 'Processes' -Reason "herramienta conocida ($($tool.ClientName))" }
         }
         foreach ($kw in $clientKeywords) {
             if ($p.Name.IndexOf($kw, [StringComparison]::OrdinalIgnoreCase) -ge 0 -or ([string]$p.ExecutablePath).IndexOf($kw, [StringComparison]::OrdinalIgnoreCase) -ge 0) {
@@ -261,6 +276,20 @@ function Invoke-AmonProcessAnalysis {
         $javaHome = if ($p.ExecutablePath) { Split-Path -Parent (Split-Path -Parent $p.ExecutablePath) } else { $null }
         try {
             $mods = @((Get-Process -Id $p.ProcessId -ErrorAction Stop).Modules | ForEach-Object { $_.FileName } | Where-Object { $_ })
+            $hook = $mods | Where-Object { [IO.Path]::GetFileName($_) -like 'JNativeHook*.dll' } | Select-Object -First 1
+            if ($hook) {
+                $res.Findings.Add((New-AmonFinding -Module 'Processes' -Category 'GlobalInputHook' -Title "Programa Java que captura teclado y ratón en ejecución (PID $($p.ProcessId))" -Status INCONCLUSIVE -Severity Medium -Confidence High `
+                            -Path $hook -TimestampUtc $p.CreationUtc -Indicator ([IO.Path]::GetFileName($hook)) -IndicatorType 'module' `
+                            -Justification "El proceso $($p.Name) (PID $($p.ProcessId)) tiene cargada la librería JNativeHook, que instala un gancho global de teclado y ratón: es la base de muchos autoclickers en Java. Línea de comandos: $(Protect-AmonCommandLine ([string]$p.CommandLine))" `
+                            -FalsePositives @('Programas Java legítimos de atajos de teclado o accesibilidad.')))
+                foreach ($j in (@($java.Jar) + @($java.NonLibraryClassPath) | Where-Object { $_ })) { Add-AmonEvidencePath -Context $Context -Path $j -Source 'Processes' -Reason 'programa Java con JNativeHook' }
+            }
+            if (Test-AmonRuntimeAgent -Modules $mods -CommandLine $p.CommandLine) {
+                $res.Findings.Add((New-AmonFinding -Module 'Processes' -Category 'RuntimeAgent' -Title "Agente Java cargado con el juego ya en marcha (PID $($p.ProcessId))" -Status INCONCLUSIVE -Severity Medium -Confidence Medium `
+                            -Path $p.ExecutablePath -TimestampUtc $p.CreationUtc -Indicator 'instrument.dll cargada sin -javaagent' -IndicatorType 'module' `
+                            -Justification 'La JVM solo carga instrument.dll para ejecutar agentes Java, y la línea de comandos no declara ninguno: alguien añadió un agente después de arrancar el juego. Es una forma de inyectar clientes; revisa la memoria y los programas ejecutados.' `
+                            -FalsePositives @('Perfiladores y herramientas de monitorización de Java (VisualVM, JProfiler...).', 'Algunos launchers o mods que cargan agentes en caliente.')))
+            }
             $flagged = @()
             foreach ($m in $mods) {
                 if (-not (Test-AmonModuleSuspicious -Path $m -Signed $false -JavaHome $javaHome)) { continue }
@@ -289,5 +318,5 @@ function Invoke-AmonProcessAnalysis {
 
 Export-ModuleMember -Function @(
     'Split-AmonCommandLine', 'ConvertFrom-AmonJavaCommandLine', 'Get-AmonSignatureInfo', 'Test-AmonModuleSuspicious',
-    'Get-AmonProcessSnapshot', 'Invoke-AmonProcessAnalysis'
+    'Test-AmonRuntimeAgent', 'Get-AmonProcessSnapshot', 'Invoke-AmonProcessAnalysis'
 )

@@ -56,6 +56,34 @@ Describe 'Procesos: módulos cargados' -Tag 'Unit' {
     }
 }
 
+Describe 'Procesos: agentes Java cargados en caliente' -Tag 'Unit' {
+    It 'instrument.dll cargada sin -javaagent en la línea de comandos indica un agente añadido después' {
+        $mods = @('C:\Java\bin\server\jvm.dll', 'C:\Java\bin\instrument.dll')
+        Test-AmonRuntimeAgent -Modules $mods -CommandLine 'javaw.exe -Xmx4G net.minecraft.client.main.Main' | Should -BeTrue
+    }
+
+    It 'no lo señala si el agente se declaró al arrancar o si no hay instrument.dll' {
+        Test-AmonRuntimeAgent -Modules @('C:\Java\bin\instrument.dll') -CommandLine 'javaw.exe -javaagent:C:\x\agent.jar Main' | Should -BeFalse
+        Test-AmonRuntimeAgent -Modules @('C:\Java\bin\server\jvm.dll') -CommandLine 'javaw.exe Main' | Should -BeFalse
+    }
+}
+
+Describe 'Procesos: herramientas conocidas por nombre' -Tag 'Unit' {
+    It 'señala un autoclicker abierto durante la revisión' {
+        Import-AmonTestModule Jar, Signatures, Processes
+        $dir = Join-Path $TestDrive 'sig-tools'
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+        '{ "schemaVersion": 1, "id": "clicker-x", "name": "Clicker X", "category": "autoclicker", "indicators": [ { "id": "cx.exe", "type": "filename", "value": "ClickerX.exe", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://example.org/clickerx" } ] }' |
+            Set-Content -LiteralPath (Join-Path $dir 'clicker-x.json') -Encoding UTF8
+        $ctx = New-AmonTestContext
+        $ctx.Signatures = Get-AmonSignatureSet -Path $dir
+        $snap = @([pscustomobject]@{ ProcessId = 999998; ParentProcessId = 0; Name = 'clickerx.exe'; ExecutablePath = 'C:\Users\S\Downloads\ClickerX.exe'; CommandLine = 'ClickerX.exe'; CreationUtc = [datetime]::UtcNow.AddMinutes(-5) })
+        $f = (Invoke-AmonProcessAnalysis -Context $ctx -Snapshot $snap).Findings | Where-Object Category -EQ 'ToolExecution'
+        $f.Status | Should -Be 'DETECTED'
+        $f.ClientId | Should -Be 'clicker-x'
+    }
+}
+
 Describe 'Procesos: argumentos JVM de clientes' -Tag 'Unit' {
     It 'un argumento JVM sin validar queda como no concluyente; uno validado, como detectado' {
         Import-AmonTestModule Jar, Signatures, Processes

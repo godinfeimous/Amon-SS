@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "dqrkis",
+  "name": "Dqrkis Client",
+  "category": "cheat-client",
+  "description": "Cliente de trampas.",
+  "openSource": false,
+  "loaders": [],
+  "references": [],
+  "keywords": ["dqrkis"],
+  "falsePositives": [],
+  "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+  "indicators": [
+    { "id": "dqrkis.string.1", "type": "string", "value": "CwskKkUfHQYB", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/YarpLetapStan/PowershellScripts/refs/heads/main/YarpsModAnalyzer6.0.ps1", "note": "YarpsModAnalyzer 6.0, $dqrkisStrings (línea ~1293) -> 'Reason: Dqrkis Client Strings'. No se decodificó (política del proyecto).", "scopes": ["entries"] },
+    { "id": "dqrkis.string.2", "type": "string", "value": "HgsCDQ49KkUfHQYB", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/YarpLetapStan/PowershellScripts/refs/heads/main/YarpsModAnalyzer6.0.ps1", "note": "YarpsModAnalyzer 6.0, $dqrkisStrings (línea ~1293) -> 'Reason: Dqrkis Client Strings'. No se decodificó (política del proyecto).", "scopes": ["entries"] },
+    { "id": "dqrkis.string.3", "type": "string", "value": "DhsnbQ0LDg0MDA", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/YarpLetapStan/PowershellScripts/refs/heads/main/YarpsModAnalyzer6.0.ps1", "note": "YarpsModAnalyzer 6.0, $dqrkisStrings (línea ~1293) -> 'Reason: Dqrkis Client Strings'. No se decodificó (política del proyecto).", "scopes": ["entries"] },
+    { "id": "dqrkis.string.4", "type": "string", "value": "OhYHBQcOHw", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/YarpLetapStan/PowershellScripts/refs/heads/main/YarpsModAnalyzer6.0.ps1", "note": "YarpsModAnalyzer 6.0, $dqrkisStrings (línea ~1293) -> 'Reason: Dqrkis Client Strings'. No se decodificó (política del proyecto).", "scopes": ["entries"] },
+    { "id": "dqrkis.string.5", "type": "string", "value": "EgQKDiUqRR8WChk", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/YarpLetapStan/PowershellScripts/refs/heads/main/YarpsModAnalyzer6.0.ps1", "note": "YarpsModAnalyzer 6.0, $dqrkisStrings (línea ~1293) -> 'Reason: Dqrkis Client Strings'. No se decodificó (política del proyecto).", "scopes": ["entries"] },
+    { "id": "dqrkis.string.6", "type": "string", "value": "KjoFWRcEAx0M", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/YarpLetapStan/PowershellScripts/refs/heads/main/YarpsModAnalyzer6.0.ps1", "note": "YarpsModAnalyzer 6.0, $dqrkisStrings (línea ~1293) -> 'Reason: Dqrkis Client Strings'. No se decodificó (política del proyecto).", "scopes": ["entries"] },
+    { "id": "dqrkis.string.7", "type": "string", "value": "Hx0GAVkcChwdDA", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/YarpLetapStan/PowershellScripts/refs/heads/main/YarpsModAnalyzer6.0.ps1", "note": "YarpsModAnalyzer 6.0, $dqrkisStrings (línea ~1293) -> 'Reason: Dqrkis Client Strings'. No se decodificó (política del proyecto).", "scopes": ["entries"] },
+    { "id": "dqrkis.string.8", "type": "string", "value": "HSw7RQQIAQQ", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/YarpLetapStan/PowershellScripts/refs/heads/main/YarpsModAnalyzer6.0.ps1", "note": "YarpsModAnalyzer 6.0, $dqrkisStrings (línea ~1293) -> 'Reason: Dqrkis Client Strings'. No se decodificó (política del proyecto).", "scopes": ["entries"] },
+    { "id": "dqrkis.string.9", "type": "string", "value": "BR0sFBcOGg4a", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/YarpLetapStan/PowershellScripts/refs/heads/main/YarpsModAnalyzer6.0.ps1", "note": "YarpsModAnalyzer 6.0, $dqrkisStrings (línea ~1293) -> 'Reason: Dqrkis Client Strings'. No se decodificó (política del proyecto).", "scopes": ["entries"] },
+    { "id": "dqrkis.string.10", "type": "string", "value": "Oh0yWR0MCA", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/YarpLetapStan/PowershellScripts/refs/heads/main/YarpsModAnalyzer6.0.ps1", "note": "YarpsModAnalyzer 6.0, $dqrkisStrings (línea ~1293) -> 'Reason: Dqrkis Client Strings'. No se decodificó (política del proyecto).", "scopes": ["entries"] },
+    { "id": "dqrkis.string.11", "type": "string", "value": "dqrkis.xyz", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/MeowTonynoh/MeowModAnalyzer/main/MeowModAnalyzer.ps1", "note": "MeowModAnalyzer $cheatStrings; Yarp lo usa como HostUrl de Zone.Identifier.", "encodings": ["ascii", "utf16le"], "scopes": ["raw", "entries"] }
+  ]
+}

@@ -81,6 +81,29 @@ Describe 'Prefetch: módulo sobre una carpeta sintética' -Tag 'Unit' {
     }
 }
 
+Describe 'Prefetch: ejecuciones desde unidades extraíbles o desconectadas' -Tag 'Unit' {
+    It 'señala un programa ejecutado en el periodo desde un volumen que ya no está conectado' {
+        $dir = Join-Path $TestDrive 'PrefetchUsb'
+        New-Item -ItemType Directory -Path $dir | Out-Null
+        $recent = [datetime]::UtcNow.AddHours(-2)
+        $usb = '\VOLUME{01d2f1e8a3b4c5d6-9999ffff}\HERRAMIENTAS\TOOL.EXE'
+        [IO.File]::WriteAllBytes((Join-Path $dir 'TOOL.EXE-ABCDEF01.pf'), (New-AmonTestPrefetchBytes -ExeName 'TOOL.EXE' -LastRuns @($recent) -FileNames @($usb)))
+        $r = Invoke-AmonPrefetchAnalysis -Context (New-AmonTestContext) -Path $dir -VolumeMap @{ '1234ABCD' = 'C:' }
+        $f = $r.Findings | Where-Object Category -EQ 'DetachedVolumeExecution'
+        $f.Status | Should -Be 'INCONCLUSIVE'
+        $f.Indicator | Should -Match '9999FFFF'
+    }
+
+    It 'no señala programas de volúmenes presentes' {
+        $dir = Join-Path $TestDrive 'PrefetchFixed'
+        New-Item -ItemType Directory -Path $dir | Out-Null
+        [IO.File]::WriteAllBytes((Join-Path $dir 'APP.EXE-ABCDEF02.pf'), (New-AmonTestPrefetchBytes -ExeName 'APP.EXE' -LastRuns @([datetime]::UtcNow.AddHours(-2)) -FileNames @('\VOLUME{01d2f1e8a3b4c5d6-1234abcd}\PROGRAM FILES\APP\APP.EXE')))
+        $r = Invoke-AmonPrefetchAnalysis -Context (New-AmonTestContext) -Path $dir -VolumeMap @{ '1234ABCD' = 'C:' }
+        @($r.Findings | Where-Object Category -EQ 'DetachedVolumeExecution').Count | Should -Be 0
+        $r.Artifacts.Count | Should -Be 0
+    }
+}
+
 Describe 'Prefetch: sistema real' -Tag 'Admin' {
     It 'interpreta los Prefetch reales de este equipo en un tiempo acotado' {
         # A través de Invoke-AmonModule: si algo se alarga, el módulo se corta y queda Partial.

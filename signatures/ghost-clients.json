@@ -1,0 +1,151 @@
+{
+  "clients": [
+    {
+      "schemaVersion": 1,
+      "id": "entropy",
+      "name": "Entropy",
+      "category": "cheat-client",
+      "description": "Cliente de trampas.",
+      "openSource": false,
+      "loaders": [],
+      "references": [],
+      "keywords": [],
+      "falsePositives": [],
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+      "indicators": [
+        { "id": "entropy.string.1", "type": "string", "value": "entropy.club", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/ohsogalacy-del/OmniSS/HEAD/src/jvm.rs", "note": "Dominio oficial (https://entropy.club/ dice 'Hidden from all public screenshare solutions'). Solo apoyo.", "encodings": ["ascii", "utf16le"], "scopes": ["raw"] }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "koid",
+      "name": "Koid",
+      "category": "cheat-client",
+      "description": "Cliente de trampas.",
+      "openSource": false,
+      "loaders": [],
+      "references": [],
+      "keywords": [],
+      "falsePositives": [],
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+      "indicators": [
+        { "id": "koid.string.1", "type": "string", "value": "www.koid.es", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/zeezyexe/zeezy-cheat-scanner/HEAD/src/scanner/MemoryScanner.cpp", "note": "Lista de cache DNS (línea 809). Dominio caído el 2026-10-21.", "encodings": ["ascii", "utf16le"], "scopes": ["raw"] }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "dream",
+      "name": "Dream Client",
+      "category": "cheat-client",
+      "description": "Cliente de trampas.",
+      "openSource": false,
+      "loaders": [],
+      "references": [],
+      "keywords": [],
+      "falsePositives": [],
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+      "indicators": [
+        { "id": "dream.string.1", "type": "string", "value": "dream-injector", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/spokwn/BAM-parser/HEAD/yara/yara.cpp", "note": "YARA 'Specifics A' ($w); atribución a Dream por el nombre.", "encodings": ["ascii", "utf16le"], "scopes": ["raw"] },
+        { "id": "dream.string.2", "type": "string", "value": "dreamclient.net", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/ohsogalacy-del/OmniSS/HEAD/src/jvm.rs", "note": "OmniSS 'Dream Client'. Dominio sin respuesta el 2026-10-21.", "encodings": ["ascii", "utf16le"], "scopes": ["raw"] }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "krypton",
+      "name": "Krypton",
+      "category": "cheat-client",
+      "description": "Cliente de trampas.",
+      "openSource": false,
+      "loaders": [],
+      "references": [],
+      "keywords": [],
+      "falsePositives": [],
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+      "indicators": [
+        { "id": "krypton.string.1", "type": "string", "value": "dev/krypton", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/v1shal-tools/onyx-strings-analyzer/HEAD/Onyx_Strings.ps1", "note": "Onyx ('Known client') y MeowModAnalyzer (suspiciousPatterns) coinciden. Muchos repositorios 'Krypton Client' de GitHub distribuyen malware (p. ej. uno con payload.exe).", "scopes": ["raw", "entries"] },
+        { "id": "krypton.string.2", "type": "string", "value": "skid/krypton", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/v1shal-tools/onyx-strings-analyzer/HEAD/Onyx_Strings.ps1", "note": "Onyx y MeowModAnalyzer.", "scopes": ["raw", "entries"] }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "catlean",
+      "name": "Catlean",
+      "category": "cheat-client",
+      "description": "Cliente de trampas.",
+      "openSource": false,
+      "loaders": [],
+      "references": [],
+      "keywords": ["catlean"],
+      "falsePositives": [],
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+      "indicators": [
+        { "id": "catlean.package.1", "type": "package", "value": "assets/catlean/", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/zeezyexe/zeezy-cheat-scanner/HEAD/src/scanner/MemoryScanner.cpp", "note": "zeezy busca 'assets/catlean' (línea 261); como entrada ZIP equivale a la carpeta de recursos." },
+        { "id": "catlean.string.1", "type": "string", "value": "catleanclient", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/v1shal-tools/onyx-strings-analyzer/HEAD/Onyx_Strings.ps1", "note": "Onyx 'Known client'.", "scopes": ["raw", "entries"] }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "asteria",
+      "name": "Asteria",
+      "category": "cheat-client",
+      "description": "Cliente de trampas.",
+      "openSource": false,
+      "loaders": [],
+      "references": [],
+      "keywords": [],
+      "falsePositives": [],
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+      "indicators": [
+        { "id": "asteria.string.1", "type": "string", "value": "asteriaclient", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/v1shal-tools/onyx-strings-analyzer/HEAD/Onyx_Strings.ps1", "note": "Onyx 'Known client' (subcadena de memoria). Solo apoyo.", "scopes": ["raw", "entries"] }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "xenon",
+      "name": "Xenon",
+      "category": "cheat-client",
+      "description": "Cliente de trampas.",
+      "openSource": false,
+      "loaders": [],
+      "references": [],
+      "keywords": [],
+      "falsePositives": [],
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+      "indicators": [
+        { "id": "xenon.string.1", "type": "string", "value": "xenonclient", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/v1shal-tools/onyx-strings-analyzer/HEAD/Onyx_Strings.ps1", "note": "Onyx 'Known client' (subcadena de memoria). Solo apoyo.", "scopes": ["raw", "entries"] }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "gypsy",
+      "name": "Gypsy",
+      "category": "cheat-client",
+      "description": "Cliente de trampas.",
+      "openSource": false,
+      "loaders": [],
+      "references": [],
+      "keywords": [],
+      "falsePositives": [],
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+      "indicators": [
+        { "id": "gypsy.string.1", "type": "string", "value": "gypsyclient", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/v1shal-tools/onyx-strings-analyzer/HEAD/Onyx_Strings.ps1", "note": "Onyx 'Known client' (subcadena de memoria). Solo apoyo.", "scopes": ["raw", "entries"] }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "id": "virgin",
+      "name": "Virgin",
+      "category": "cheat-client",
+      "description": "Cliente de trampas.",
+      "openSource": false,
+      "loaders": [],
+      "references": [],
+      "keywords": [],
+      "falsePositives": [],
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+      "indicators": [
+        { "id": "virgin.string.1", "type": "string", "value": "virginclient", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/v1shal-tools/onyx-strings-analyzer/HEAD/Onyx_Strings.ps1", "note": "Onyx 'Known client' (subcadena de memoria). Solo apoyo.", "scopes": ["raw", "entries"] }
+      ]
+    }
+  ]
+}

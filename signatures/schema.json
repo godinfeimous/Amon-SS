@@ -10,7 +10,7 @@
       "properties": {
         "id": { "type": "string", "description": "Identificador único dentro del cliente." },
         "type": {
-          "enum": ["package", "entry", "entrypoint", "manifest", "modid", "config", "path", "log", "string", "hex", "sha256", "versionId", "jvmArg"],
+          "enum": ["package", "entry", "entrypoint", "manifest", "modid", "config", "path", "log", "string", "hex", "sha256", "versionId", "jvmArg", "filename", "memory"],
           "description": "package: prefijo de entrada ZIP; entry: nombre de entrada (ruta completa o nombre de archivo); entrypoint: clase Java (puntos); manifest: 'Clave: Valor'; modid: id declarado en metadatos o cargado según logs; config/path: ruta relativa a gameDir o userHome; log: texto en logs de Minecraft; string: bytes literales; hex: bytes en hexadecimal; sha256: hash de archivo; versionId: regex sobre ids de versions/; jvmArg: subcadena de argumentos JVM."
         },
         "value": { "type": "string", "minLength": 1 },
@@ -33,7 +33,7 @@
     "schemaVersion": { "const": 1 },
     "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9\\-]*$" },
     "name": { "type": "string" },
-    "category": { "enum": ["cheat-client", "dual-use", "framework"] },
+    "category": { "enum": ["cheat-client", "dual-use", "framework", "autoclicker", "macro", "injector", "bypass"] },
     "description": { "type": "string" },
     "openSource": { "type": "boolean" },
     "loaders": { "type": "array", "items": { "type": "string" } },

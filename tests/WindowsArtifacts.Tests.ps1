@@ -154,6 +154,34 @@ Describe 'Eventos de Windows' -Tag 'Unit' {
         $res.Status | Should -Be 'Partial'
     }
 
+    It 'señala drivers instalados desde carpetas de usuario, USN borrado, exclusiones de Defender y caídas de Java por DLL ajenas' {
+        $now = [datetime]::UtcNow
+        $inj = @{ SecurityAccessible = $false; SecurityOldestUtc = $null; Audit = [pscustomobject]@{ Enabled = $null; Source = 'sin acceso'; CommandLineIncluded = $null }
+            Security4688 = @(); Security1102 = @(); System104 = @(); Defender = @(); RunEntries = @()
+            System7045 = @(
+                [pscustomobject]@{ TimeCreated = $now.AddHours(-2); ServiceName = 'kdrv'; ImagePath = 'C:\Users\S\AppData\Local\Temp\kdrv.sys'; ServiceType = 'kernel mode driver'; StartType = 'demand start' },
+                [pscustomobject]@{ TimeCreated = $now.AddHours(-2); ServiceName = 'Audio'; ImagePath = 'C:\Windows\System32\drivers\audio.sys'; ServiceType = 'kernel mode driver'; StartType = 'auto start' })
+            Ntfs501 = @(
+                [pscustomobject]@{ TimeCreated = $now.AddHours(-1); ProcessName = 'fsutil.exe'; VolumeName = 'C:'; JournalId = '0x1' },
+                [pscustomobject]@{ TimeCreated = $now.AddHours(-1); ProcessName = 'SearchIndexer.'; VolumeName = 'C:'; JournalId = '0x1' })
+            DefenderConfig = @(
+                [pscustomobject]@{ TimeCreated = $now.AddHours(-4); EventId = 5007; NewValue = 'HKLM\SOFTWARE\Microsoft\Windows Defender\Exclusions\Paths\C:\Users\S\Downloads = 0x0'; OldValue = '' },
+                [pscustomobject]@{ TimeCreated = $now.AddHours(-4); EventId = 5007; NewValue = 'HKLM\SOFTWARE\Microsoft\Windows Defender\Features\Controls\203 = 0x1'; OldValue = '' },
+                [pscustomobject]@{ TimeCreated = $now.AddHours(-4); EventId = 5001; NewValue = $null; OldValue = $null })
+            AppCrash = @(
+                [pscustomobject]@{ TimeCreated = $now.AddHours(-5); AppName = 'javaw.exe'; AppPath = 'C:\Java\bin\javaw.exe'; ModuleName = 'x.dll'; ModulePath = 'C:\Users\S\AppData\Local\Temp\x.dll'; ExceptionCode = 'c0000005' },
+                [pscustomobject]@{ TimeCreated = $now.AddHours(-5); AppName = 'javaw.exe'; AppPath = 'C:\Java\bin\javaw.exe'; ModuleName = 'jvm.dll'; ModulePath = 'C:\Java\bin\server\jvm.dll'; ExceptionCode = 'c0000005' })
+        }
+        $res = Invoke-AmonEventAnalysis -Context (New-AmonTestContext) -Injected $inj
+        ($res.Findings | Where-Object Category -EQ 'DriverInstalled').Path | Should -Be 'C:\Users\S\AppData\Local\Temp\kdrv.sys'
+        $usn = @($res.Findings | Where-Object Category -EQ 'UsnJournalDeleted')
+        $usn.Count | Should -Be 1
+        $usn[0].Status | Should -Be 'DETECTED'
+        ($res.Findings | Where-Object Category -EQ 'DefenderExclusion').Indicator | Should -Match 'Downloads'
+        ($res.Findings | Where-Object Category -EQ 'DefenderDisabled') | Should -Not -BeNullOrEmpty
+        @($res.Findings | Where-Object Category -EQ 'JavaCrashForeignModule').Count | Should -Be 1
+    }
+
     It 'un launcher legítimo en el inicio automático se lista pero no genera hallazgo' {
         $inj = @{ SecurityAccessible = $false; SecurityOldestUtc = $null; Audit = [pscustomobject]@{ Enabled = $null; Source = 'sin acceso'; CommandLineIncluded = $null }; Security4688 = @(); Security1102 = @(); System104 = @(); Defender = @()
             RunEntries = @([pscustomobject]@{ Hive = 'HKCU'; Key = 'Run'; Name = 'Lunar Client'; Value = '"C:\Users\S\AppData\Local\Programs\lunarclient\Lunar Client.exe" --hidden' }) }

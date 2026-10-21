@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "breeze",
+  "name": "Breeze",
+  "category": "cheat-client",
+  "description": "Cliente de trampas.",
+  "openSource": false,
+  "loaders": [],
+  "references": [],
+  "keywords": [],
+  "falsePositives": [],
+  "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+  "indicators": [
+    { "id": "breeze.config.1", "type": "config", "value": "AppData/Roaming/breeze/1.8.9", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://scripting.breeze.rip/getting_started.md", "note": "Documentación oficial: carpeta en %APPDATA% ('the same folder where .minecraft is') con la ruta 'breeze/1.8.9/scripts'.", "relativeTo": "userHome" },
+    { "id": "breeze.path.1", "type": "path", "value": "AppData/Roaming/breeze/1.8.9/scripts", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://scripting.breeze.rip/getting_started.md", "note": "La introducción (https://scripting.breeze.rip/) la llama 'breeze/1.8.9/scripting': conviene comprobar ambas.", "relativeTo": "userHome" },
+    { "id": "breeze.path.2", "type": "path", "value": "AppData/Roaming/breeze/1.8.9/scripting", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://scripting.breeze.rip/", "note": "Variante del nombre de carpeta citada en la introducción oficial.", "relativeTo": "userHome" },
+    { "id": "breeze.string.1", "type": "string", "value": "Breeze.InjectScreen", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/spokwn/PathsParser/HEAD/rules.cpp", "note": "YARA de PathsParser ($ah).", "encodings": ["ascii", "utf16le"], "scopes": ["raw"] },
+    { "id": "breeze.string.2", "type": "string", "value": "breeze.dll", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/spokwn/PathsParser/HEAD/rules.cpp", "note": "YARA de PathsParser ($af).", "encodings": ["ascii", "utf16le"], "scopes": ["raw"] }
+  ]
+}

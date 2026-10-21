@@ -13,6 +13,7 @@
   "indicators": [
     { "id": "impact.version-id", "type": "versionId", "value": "^.+-Impact_.+$", "match": "regex", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/ImpactDevelopment/Installer/master/src/main/java/io/github/ImpactDevelopment/installer/target/targets/Vanilla.java", "note": "Ejemplo: 1.12.2-Impact_4.9 (con sufijo -OptiFine_<v> opcional)." },
     { "id": "impact.library", "type": "path", "value": "libraries/com/github/ImpactDevelopment/Impact", "relativeTo": "gameDir", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/ImpactDevelopment/Installer/master/src/main/java/io/github/ImpactDevelopment/installer/impact/ImpactVersion.java" },
-    { "id": "impact.clientapi", "type": "package", "value": "clientapi/", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/ImpactDevelopment/ClientAPI/1.12.2/README.md", "note": "ClientAPI de ImpactDevelopment; no está probado qué builds de Impact la incluyen." }
+    { "id": "impact.clientapi", "type": "package", "value": "clientapi/", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/ImpactDevelopment/ClientAPI/1.12.2/README.md", "note": "ClientAPI de ImpactDevelopment; no está probado qué builds de Impact la incluyen." },
+    { "id": "impact.package.1", "type": "package", "value": "net/impactclient/", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/Jammy108/AstroSS/HEAD/Astro/config.py", "note": "AstroSS 'Impact Client' ('net/impactclient')." }
   ]
 }

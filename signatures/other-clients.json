@@ -11,8 +11,20 @@
       "references": ["https://vape.gg/"],
       "keywords": ["vape"],
       "falsePositives": [],
-      "notes": "Sin indicadores verificables: la web oficial solo indica que es inyectable y las descargas requieren cuenta. Las firmas que circulan en foros no se incluyen por no poder verificarse. El escaneo de archivos no puede descartarlo.",
-      "indicators": []
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md): herramientas SS públicas y código publicado; cada uno cita su fuente.",
+      "indicators": [
+        { "id": "vape.string.1", "type": "string", "value": "Manthe Industries, LLC", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/spokwn/BAM-parser/HEAD/BAM/BAM.cpp", "note": "spokwn BAM-parser (línea 145) marca el firmante 'manthe industries, llc' como 'Cheat Signature'; el gist de Azran (idk.md) lo asocia a Vape Lite. La web y la documentación oficiales confirman el nombre de la empresa ('Copyright 2015-2026 Manthe Industries, LLC', https://docs.vape.gg/). Se espera en el certificado Authenticode del ejecutable; las mayúsculas exactas del certificado no están verificadas (Amon distingue mayúsculas).", "encodings": ["ascii"], "scopes": ["raw"] },
+        { "id": "vape.string.2", "type": "string", "value": "[!] Failed to find Vape jar", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/spokwn/BAM-parser/HEAD/yara/yara.cpp", "note": "Regla YARA 'Specifics A' ($e), insensible a mayúsculas, ascii y wide.", "encodings": ["ascii", "utf16le"], "scopes": ["raw"] },
+        { "id": "vape.string.3", "type": "string", "value": "Vape Launcher", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/spokwn/BAM-parser/HEAD/yara/yara.cpp", "note": "Regla YARA 'Specifics A' ($f). La página de soporte oficial habla de 'the vape launcher' (https://docs.vape.gg/troubleshooting/launch-issues).", "encodings": ["ascii", "utf16le"], "scopes": ["raw"] },
+        { "id": "vape.string.4", "type": "string", "value": "vape.gg", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/spokwn/BAM-parser/HEAD/yara/yara.cpp", "note": "Dominio oficial; también en OmniSS jvm.rs y Onyx. Corto y presente en cachés de navegador: solo apoyo.", "encodings": ["ascii", "utf16le"], "scopes": ["raw"] },
+        { "id": "vape.string.5", "type": "string", "value": "(JLcn/gov/vape/util/jvmti/ClassLoadHook;)I", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/zeezyexe/zeezy-cheat-scanner/HEAD/src/scanner/MemoryScanner.cpp", "note": "Lista kRedDetections (línea 248) sin etiqueta de cliente; atribución a Vape por el nombre del paquete. Firma JNI típica del modulo inyectado.", "encodings": ["ascii"], "scopes": ["raw", "entries"] },
+        { "id": "vape.string.6", "type": "string", "value": "Vape4DLL.dll", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/Sypherox/Devyl/HEAD/scanner/DPS_Strings.txt", "note": "Línea 875 'Vape4DLL.dll:::2025/09/09:17:11:33' de una lista de cadenas DPS (memoria del servicio DPS). Que aparezca dentro del inyector no está comprobado.", "encodings": ["ascii", "utf16le"], "scopes": ["raw"] },
+        { "id": "vape.sha256.1", "type": "sha256", "value": "30023ad5e824d2f17c3724b488b66d1afbf4bdf191fc453f61fe4b0ec4a91eb5", "strength": "strong", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/Briiqn/TuxTool/main/check/modcheats.sh", "note": "TuxTool: 'Vape Crack (Fake)'. Solo identifica esa compilación; los cracks falsos suelen ser malware." },
+        { "id": "vape.sha256.2", "type": "sha256", "value": "68a675b0d31fe9fe538ed7580f22416bd824518ad17b9d5a69e35b8bc57102c8", "strength": "strong", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/Briiqn/TuxTool/main/check/modcheats.sh", "note": "TuxTool: 'Vape V3.25 Crack'." },
+        { "id": "vape.string.7", "type": "string", "value": "com/sun/jna/z/Main", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/Jammy108/AstroSS/HEAD/Astro/config.py", "note": "AstroSS 'Vape Cracked #2'; también andreaonorato/Minecraft-Cheat-Scanner lo etiqueta 'Vape 2.06'. Versión antigua (v2/v3).", "scopes": ["raw", "entries"] },
+        { "id": "vape.string.8", "type": "string", "value": "com/sun/jna/z/a/e/a/a/a/f", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/Jammy108/AstroSS/HEAD/Astro/config.py", "note": "AstroSS 'Vape Cracked #1'. Versión antigua.", "scopes": ["raw", "entries"] },
+        { "id": "vape.string.9", "type": "string", "value": "erouax/instavape", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/Jammy108/AstroSS/HEAD/Astro/config.py", "note": "AstroSS 'Wax Vape Mod'; el gist de Azran lo etiqueta 'Instant Vape Mod'. Versión antigua.", "scopes": ["raw", "entries"] }
+      ]
     },
     {
       "schemaVersion": 1,
@@ -25,8 +37,26 @@
       "references": [],
       "keywords": [],
       "falsePositives": [],
-      "notes": "Sin indicadores verificables: todos los repositorios conocidos están bloqueados en GitHub (HTTP 451) y no había copia primaria accesible el 2026-10-20. Los nombres de paquete citados habitualmente no se incluyen por no poder verificarse.",
-      "indicators": []
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md): herramientas SS públicas y código publicado; cada uno cita su fuente.",
+      "indicators": [
+        { "id": "raven.package.1", "type": "package", "value": "keystrokesmod/module/", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://codeberg.org/strangerrrrs/raven-bS/raw/commit/44d82ec09b83d03f7c8af47cf97823f40bb33745/src/main/java/keystrokesmod/Raven.java", "note": "Raven bS (repositorio del autor en Codeberg, commit 44d82ec). 'package keystrokesmod;' e 'import keystrokesmod.module.Module'. El aviso DMCA de GitHub (2025-07-15) afirma que Raven b+ y bS derivan del código de Raven B3: el paquete es común a la familia y a sus forks." },
+        { "id": "raven.package.2", "type": "package", "value": "keystrokesmod/script/", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://codeberg.org/strangerrrrs/raven-bS/raw/commit/44d82ec09b83d03f7c8af47cf97823f40bb33745/src/main/java/keystrokesmod/script/ScriptManager.java", "note": "API de scripting de Raven bS." },
+        { "id": "raven.entrypoint.1", "type": "entrypoint", "value": "keystrokesmod.Raven", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://codeberg.org/strangerrrrs/raven-bS/raw/commit/44d82ec09b83d03f7c8af47cf97823f40bb33745/src/main/java/keystrokesmod/Raven.java", "note": "Clase @Mod principal (keystrokesmod/Raven.class)." },
+        { "id": "raven.entry.1", "type": "entry", "value": "mixins.raven.json", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://codeberg.org/strangerrrrs/raven-bS/raw/commit/44d82ec09b83d03f7c8af47cf97823f40bb33745/build.gradle.kts", "note": "mixinConfig(\"mixins.raven.json\") y recurso src/main/resources/mixins.raven.json." },
+        { "id": "raven.entry.2", "type": "entry", "value": "mixins.raven.refmap.json", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://codeberg.org/strangerrrrs/raven-bS/raw/commit/44d82ec09b83d03f7c8af47cf97823f40bb33745/build.gradle.kts", "note": "defaultRefmapName.set(\"mixins.raven.refmap.json\")." },
+        { "id": "raven.manifest.1", "type": "manifest", "value": "MixinConfigs: mixins.raven.json", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://codeberg.org/strangerrrrs/raven-bS/raw/commit/44d82ec09b83d03f7c8af47cf97823f40bb33745/build.gradle.kts", "note": "Atributo del MANIFEST definido en tasks.withType(Jar)." },
+        { "id": "raven.config.1", "type": "config", "value": "keystrokes/profiles", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://codeberg.org/strangerrrrs/raven-bS/raw/commit/44d82ec09b83d03f7c8af47cf97823f40bb33745/src/main/java/keystrokesmod/utility/profile/ProfileManager.java", "note": "new File(mc.mcDataDir + File.separator + \"keystrokes\", \"profiles\") (línea 66).", "relativeTo": "gameDir" },
+        { "id": "raven.config.2", "type": "config", "value": "keystrokes/scripts", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://codeberg.org/strangerrrrs/raven-bS/raw/commit/44d82ec09b83d03f7c8af47cf97823f40bb33745/src/main/java/keystrokesmod/script/ScriptManager.java", "note": "new File(mc.mcDataDir + File.separator + \"keystrokes\", \"scripts\") (línea 44).", "relativeTo": "gameDir" },
+        { "id": "raven.path.1", "type": "path", "value": "keystrokes/players.json", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://codeberg.org/strangerrrrs/raven-bS/raw/commit/44d82ec09b83d03f7c8af47cf97823f40bb33745/src/main/java/keystrokesmod/utility/PlayerRelationsManager.java", "note": "Lista de amigos/enemigos (líneas 69-73).", "relativeTo": "gameDir" },
+        { "id": "raven.path.2", "type": "path", "value": "AppData/Local/Temp/cmF2ZW5fc2NyaXB0cw", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://codeberg.org/strangerrrrs/raven-bS/raw/commit/44d82ec09b83d03f7c8af47cf97823f40bb33745/src/main/java/keystrokesmod/utility/Utils.java", "note": "getCompilerDirectory(): System.getProperty(\"java.io.tmpdir\") + \"cmF2ZW5fc2NyaXB0cw\" en Windows (línea 404). Solo existe si se compilaron scripts y si %TEMP% es la ruta por defecto.", "relativeTo": "userHome" },
+        { "id": "raven.entry.3", "type": "entry", "value": "assets/keystrokesmod/textures/capes/rvn_white.png", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://codeberg.org/strangerrrrs/raven-bS/raw/commit/44d82ec09b83d03f7c8af47cf97823f40bb33745/src/main/resources/assets/keystrokesmod/textures/capes/rvn_white.png", "note": "Recurso de capa de Raven bS (hay variantes rvn_aqua, rvn_green, rvn_purple, rvn_red, rvn_yellow)." },
+        { "id": "raven.sha256.1", "type": "sha256", "value": "320ec3ef32f50693fea5d821491fb60c18cf94524c7be99ac60b535a3c13bcfe", "strength": "strong", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/Briiqn/TuxTool/main/check/modcheats.sh", "note": "TuxTool: 'Raven B+ v.1.0.16'." },
+        { "id": "raven.sha256.2", "type": "sha256", "value": "03f069fa7fcd395492088329ceda11bacc666612979882704982c97073034163", "strength": "strong", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/Briiqn/TuxTool/main/check/modcheats.sh", "note": "TuxTool: 'Raven B+ Experimental'." },
+        { "id": "raven.sha256.3", "type": "sha256", "value": "59c1f741f198c68cb70f94630fa36739f6106c7a06eb2a04514feb2c84ef6ad6", "strength": "strong", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/Briiqn/TuxTool/main/check/modcheats.sh", "note": "TuxTool: 'Raven B+ Beta'." },
+        { "id": "raven.sha256.4", "type": "sha256", "value": "99781fa9716552e2abad20304f39d673fa530c941928b104e17df8d94ae31673", "strength": "strong", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/Briiqn/TuxTool/main/check/modcheats.sh", "note": "TuxTool: 'Old Raven B+'." },
+        { "id": "raven.string.1", "type": "string", "value": "keystr0kes", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/Jammy108/AstroSS/HEAD/Astro/config.py", "note": "AstroSS 'Raven Mod Client' (cadena de memoria de javaw; versión antigua).", "scopes": ["raw", "entries"] },
+        { "id": "raven.string.2", "type": "string", "value": "ravenbplus", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/ohsogalacy-del/OmniSS/HEAD/src/jvm.rs", "note": "OmniSS 'Raven Ghost' (memoria). Fuente de fiabilidad baja; solo apoyo.", "scopes": ["raw", "entries"] }
+      ]
     },
     {
       "schemaVersion": 1,
@@ -42,8 +72,19 @@
         "El mod 'Inertia!' de Modrinth (cámara) y 'Inertia Anti Cheat' (servidor) no tienen relación.",
         "Repositorios Minecraft-Inertia/* parecen spam o distribución de malware; no son fuente."
       ],
-      "notes": "Sin indicadores verificables: no se localizó repositorio ni documentación oficial.",
-      "indicators": []
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md): herramientas SS públicas y código publicado; cada uno cita su fuente.",
+      "indicators": [
+        { "id": "inertia.package.1", "type": "package", "value": "com/inertiaclient/base/", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/THEREALWWEFAN231/inertia-client-base/a51e09bc766e6063a757857bee060aee84ae1d73/inertia-client-base/src/main/resources/fabric.mod.json", "note": "ICB (Inertia Client Base), repositorio público del propio desarrollador (THEREALWWEFAN231/IKnowImEZ). Su README dice que Inertia Client se construye sobre ICB; ICB por si solo no trae modulos: la atribución a Inertia Client es inferida (en el archivo de firmas encaja mejor como 'framework')." },
+        { "id": "inertia.entrypoint.1", "type": "entrypoint", "value": "com.inertiaclient.base.FabricMod", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/THEREALWWEFAN231/inertia-client-base/a51e09bc766e6063a757857bee060aee84ae1d73/inertia-client-base/src/main/resources/fabric.mod.json", "note": "Entrypoint 'client' de ICB." },
+        { "id": "inertia.entry.1", "type": "entry", "value": "icb.mixins.json", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/THEREALWWEFAN231/inertia-client-base/a51e09bc766e6063a757857bee060aee84ae1d73/inertia-client-base/src/main/resources/fabric.mod.json" },
+        { "id": "inertia.entry.2", "type": "entry", "value": "icb.accesswidener", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/THEREALWWEFAN231/inertia-client-base/a51e09bc766e6063a757857bee060aee84ae1d73/inertia-client-base/src/main/resources/fabric.mod.json" },
+        { "id": "inertia.config.1", "type": "config", "value": "icb/Configs", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/THEREALWWEFAN231/inertia-client-base/a51e09bc766e6063a757857bee060aee84ae1d73/inertia-client-base/src/main/java/com/inertiaclient/base/utils/FileManager.java", "note": "mainDirectory = gameDirectory.resolve(\"icb\"); getGameFolder(\"Configs\") (líneas 62 y 73).", "relativeTo": "gameDir" },
+        { "id": "inertia.log.1", "type": "log", "value": "saved ICB settings json", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/THEREALWWEFAN231/inertia-client-base/a51e09bc766e6063a757857bee060aee84ae1d73/inertia-client-base/src/main/java/com/inertiaclient/base/utils/FileManager.java", "note": "InertiaBase.LOGGER.info(\"saved ICB settings json\") (línea 53); logger 'icb'." },
+        { "id": "inertia.entry.3", "type": "entry", "value": "mixins.inertia.json", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://github.com/THEREALWWEFAN231/Inertia-Issues/issues/822", "note": "Log publicado en el issue tracker oficial: 'Mixin apply failed mixins.inertia.json:MmJq' (Inertia 1.16.3)." },
+        { "id": "inertia.entry.4", "type": "entry", "value": "assets/minecraft/textures/inertia/logos/squareredicon.png", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://github.com/THEREALWWEFAN231/Inertia-Issues/issues/1330", "note": "Campo 'icon' del fabric.mod.json de Inertia Client 3.1.3 citado en el issue." },
+        { "id": "inertia.log.2", "type": "log", "value": "This isent good, please report this on the github", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://github.com/THEREALWWEFAN231/Inertia-Issues/issues/956", "note": "Mensaje (con la errata 'isent') que Inertia 3.1 imprime por STDOUT y queda en latest.log." },
+        { "id": "inertia.package.2", "type": "package", "value": "inertia/", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://github.com/THEREALWWEFAN231/Inertia-Issues/issues/956", "note": "Clases ofuscadas en las trazas: 'at inertia.ZGbt.pAcb' dentro de 'Inertia Client 3.1.3 - 1.16.4.jar'. Comprobar que el mod 'Inertia!' no usa ese paquete." }
+      ]
     },
     {
       "schemaVersion": 1,
@@ -56,8 +97,14 @@
       "references": [],
       "keywords": [],
       "falsePositives": [],
-      "notes": "Sin indicadores verificables: la web oficial no respondió y no hay fuente primaria.",
-      "indicators": []
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md): herramientas SS públicas y código publicado; cada uno cita su fuente.",
+      "indicators": [
+        { "id": "sigma.package.1", "type": "package", "value": "com/mentalfrostbyte/jello/", "strength": "strong", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/neilhuang007/sigma_buildable/d666dc29c2053e207bc94dfa230649b19d5b3918/src/main/java/com/mentalfrostbyte/jello/main/Jello.java", "note": "Paquete de Jello para 1.8 en dos repositorios no oficiales (neilhuang007/sigma_buildable y EnderDrago0/SigmaJello). No se comprobó que el JAR de Sigma 5 lo conserve: el Sigma 5.0 desofuscado (SigmaRemap) usa clases renombradas." },
+        { "id": "sigma.config.1", "type": "config", "value": "sigma5", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/xquj/SigmaRemap/8bb0f8ae4433831978865c9aef37f674c3c32e10/src/deobf/remapped/SigmaMainClass.java", "note": "private final File sigmaFolder = new File(\"sigma5\") (Sigma 5.0.0b15, línea 20). Ruta relativa al directorio de trabajo (normalmente gameDir).", "relativeTo": "gameDir" },
+        { "id": "sigma.path.1", "type": "path", "value": "sigma5/config.json", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/xquj/SigmaRemap/8bb0f8ae4433831978865c9aef37f674c3c32e10/src/deobf/remapped/SigmaMainClass.java", "note": "Líneas 71, 162 y 173.", "relativeTo": "gameDir" },
+        { "id": "sigma.config.2", "type": "config", "value": "sigma5/profiles", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/xquj/SigmaRemap/8bb0f8ae4433831978865c9aef37f674c3c32e10/src/deobf/remapped/ConfigManager.java", "note": "Archivos <nombre>.profile (líneas 60-116).", "relativeTo": "gameDir" },
+        { "id": "sigma.path.2", "type": "path", "value": "jello/jello.lic", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/xquj/SigmaRemap/8bb0f8ae4433831978865c9aef37f674c3c32e10/src/deobf/remapped/AccountManager.java", "note": "Licencia guardada por Sigma 5 (líneas 182, 300 y 326).", "relativeTo": "gameDir" }
+      ]
     },
     {
       "schemaVersion": 1,
@@ -70,8 +117,15 @@
       "references": ["https://riseclient.com/"],
       "keywords": [],
       "falsePositives": [],
-      "notes": "Sin indicadores verificables de archivo, paquete o log. Su documentación de scripting (JavaScript ES 5.1) no documenta rutas.",
-      "indicators": []
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md): herramientas SS públicas y código publicado; cada uno cita su fuente.",
+      "indicators": [
+        { "id": "rise.package.1", "type": "package", "value": "com/alan/clients/", "strength": "strong", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/CykXd/RiseClient/c590a4228929d1fe0294db87b96e0e8d72836db0/Client.java", "note": "Código filtrado de Rise 6.2.4 ('package com.alan.clients;'). Un comentario del propio código dice que en la versión ofuscada algunas clases siguen en com.alan.clients. Coincide con las listas de Onyx y MeowModAnalyzer." },
+        { "id": "rise.package.2", "type": "package", "value": "hackclient/", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/CykXd/RiseClient/c590a4228929d1fe0294db87b96e0e8d72836db0/Client.java", "note": "Paquete de la versión ofuscada según Client.java (líneas 151 y 196: dirExist(\"hackclient.\")). Nombre genérico: otros clientes podrían usarlo." },
+        { "id": "rise.config.1", "type": "config", "value": "Rise/configs", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/CykXd/RiseClient/c590a4228929d1fe0294db87b96e0e8d72836db0/util/file/config/ConfigManager.java", "note": "FileManager.DIRECTORY = new File(mc.mcDataDir, \"Rise\") + \"configs\" (latest.json).", "relativeTo": "gameDir" },
+        { "id": "rise.path.1", "type": "path", "value": "Rise/alts/alts.json", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/CykXd/RiseClient/c590a4228929d1fe0294db87b96e0e8d72836db0/util/file/alt/AltManager.java", "relativeTo": "gameDir" },
+        { "id": "rise.config.2", "type": "config", "value": "Rise/insults", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/CykXd/RiseClient/c590a4228929d1fe0294db87b96e0e8d72836db0/util/file/insult/InsultManager.java", "relativeTo": "gameDir" },
+        { "id": "rise.config.3", "type": "config", "value": "Rise/scripts", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/CykXd/RiseClient/c590a4228929d1fe0294db87b96e0e8d72836db0/script/ScriptManager.java", "note": "Scripts .js.", "relativeTo": "gameDir" }
+      ]
     },
     {
       "schemaVersion": 1,
@@ -84,8 +138,11 @@
       "references": [],
       "keywords": ["novoline"],
       "falsePositives": [],
-      "notes": "Sin indicadores verificables: no se localizó fuente pública oficial.",
-      "indicators": []
+      "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md): herramientas SS públicas y código publicado; cada uno cita su fuente.",
+      "indicators": [
+        { "id": "novoline.package.1", "type": "package", "value": "cc/novoline/", "strength": "strong", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/RandomForks/novoline/0b0fe7b1007aa83fc0fa9768d229ff8741814d22/src/cc/novoline/Novoline.java", "note": "Código filtrado/remapeado (RandomForks/novoline y oooooomygod/novoline-opensource). Coincide con Onyx y MeowModAnalyzer. Ojo: hay forks de Raven bS llamados 'Novoline-bS' que no usan este paquete." },
+        { "id": "novoline.config.1", "type": "config", "value": "Novoline", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/RandomForks/novoline/0b0fe7b1007aa83fc0fa9768d229ff8741814d22/src/cc/novoline/Novoline.java", "note": "dataFolder = Paths.get(mc.mcDataDir...).resolve(\"Novoline\") (líneas 59 y 135).", "relativeTo": "gameDir" }
+      ]
     }
   ]
 }

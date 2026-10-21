@@ -178,6 +178,7 @@ function Invoke-AmonPrefetchAnalysis {
         return Complete-AmonModuleResult -Result $res -Status Failed
     }
     if (-not $VolumeMap) { $VolumeMap = Get-AmonVolumeMap }
+    $removable = @(try { [IO.DriveInfo]::GetDrives() | Where-Object { $_.DriveType -eq 'Removable' } | ForEach-Object { $_.Name.TrimEnd('\') } } catch { })
     $launchers = @($Context.Settings.launcherProcessNames | ForEach-Object { ([string]$_).ToUpperInvariant() })
     $keywords = @($Context.Keywords)
     $indicators = @($Context.IndicatorNames)
@@ -192,12 +193,21 @@ function Invoke-AmonPrefetchAnalysis {
         $isLauncher = [bool]($launchers | Where-Object { $_.StartsWith($exeUpper) -or $exeUpper.StartsWith($_) })
         $isJava = $exeUpper -in @('JAVA.EXE', 'JAVAW.EXE')
         $kwExe = Test-AmonKeywordMatch -Text $pf.ExecutableName -Keywords $keywords
+        $tool = Get-AmonToolByFileName -Context $Context -Name $pf.ExecutableName
         # Decisión barata sobre los nombres en bruto unidos en una cadena: un Prefetch puede citar
         # cientos de archivos y hay hasta ~1024, así que solo los relevantes pagan la conversión
         # de rutas y el análisis por archivo.
         $joined = ($pf.FileNames -join "`n") + "`n"
         $indNames = @($indicators | Where-Object { $joined.IndexOf('\' + $_ + "`n", [StringComparison]::OrdinalIgnoreCase) -ge 0 })
-        $relevant = $All -or $isLauncher -or $isJava -or $kwExe -or $indNames.Count
+        # Programa ejecutado desde una unidad extraíble o desde un volumen que ya no está
+        # conectado (BAM no registra ejecuciones desde USB; Prefetch sí guarda el volumen).
+        $exeRaw = $pf.FileNames | Where-Object { $_.EndsWith('\' + $pf.ExecutableName, [StringComparison]::OrdinalIgnoreCase) } | Select-Object -First 1
+        $detached = $null
+        if ($exeRaw -and $pf.LastRunTimes.Count -and (Test-AmonInWindow -Context $Context -Utc $pf.LastRunTimes[0])) {
+            if ($exeRaw -match '^\\VOLUME\{[0-9A-Fa-f]+-([0-9A-Fa-f]{8})\}' -and -not $VolumeMap.ContainsKey($Matches[1].ToUpperInvariant())) { $detached = "volumen $($Matches[1].ToUpperInvariant()) que ya no está conectado" }
+            elseif ($exeRaw -match '^\\VOLUME\{[0-9A-Fa-f]+-([0-9A-Fa-f]{8})\}' -and $removable -contains [string]$VolumeMap[$Matches[1].ToUpperInvariant()]) { $detached = "unidad extraíble $($VolumeMap[$Matches[1].ToUpperInvariant()]) (volumen $($Matches[1].ToUpperInvariant()))" }
+        }
+        $relevant = $All -or $isLauncher -or $isJava -or $kwExe -or $tool -or $detached -or $indNames.Count
         if (-not $relevant) { $omitted++; continue }
 
         $fileFacts = Get-AmonFileFacts -Path $f
@@ -231,7 +241,19 @@ function Invoke-AmonPrefetchAnalysis {
                         -FalsePositives @('La coincidencia es por nombre de archivo; confirma con el hash del archivo si todavía existe.') `
                         -Evidence @(New-AmonEvidence -Source 'Prefetch' -Kind Execution -Path $f -TimestampUtc $(if ($pf.LastRunTimes.Count) { $pf.LastRunTimes[0] } else { $null }) -Description "$([IO.Path]::GetFileName($f)): $($pf.RunCount) ejecuciones registradas")))
         }
-        if ($kwExe -and -not $isLauncher -and -not $isJava) {
+        if ($detached) {
+            $res.Findings.Add((New-AmonFinding -Module 'Prefetch' -Category 'DetachedVolumeExecution' -Title "Programa ejecutado desde una unidad externa: $($pf.ExecutableName)" -Status INCONCLUSIVE -Severity Medium -Confidence High `
+                        -Path $(if ($exePath) { $exePath } else { $exeRaw }) -TimestampUtc $pf.LastRunTimes[0] -Indicator $detached -IndicatorType 'volume' `
+                        -Justification ("Según {0}, {1} se ejecutó desde un {2}; última ejecución: {3}. Ejecutar desde un USB y retirarlo es una forma de no dejar el archivo en el equipo." -f [IO.Path]::GetFileName($f), $pf.ExecutableName, $detached, (Format-AmonTimestamp $pf.LastRunTimes[0])) `
+                        -FalsePositives @('Programas portables legítimos, instaladores desde un pendrive o discos externos de juegos.')))
+        }
+        if ($tool) {
+            $lastRun = if ($pf.LastRunTimes.Count) { $pf.LastRunTimes[0] } else { $null }
+            $res.Findings.Add((New-AmonToolFinding -Module 'Prefetch' -Indicator $tool -Path $(if ($exePath) { $exePath } else { $f }) -TimestampUtc $lastRun `
+                        -What "Ejecución de $($tool.ClientName) registrada en Prefetch" `
+                        -Detail ("Prefetch {0}: {1} ejecuciones; últimas: {2}." -f [IO.Path]::GetFileName($f), $pf.RunCount, (@($pf.LastRunTimes | Select-Object -First 3 | ForEach-Object { Format-AmonTimestamp $_ }) -join ', '))))
+            if ($exePath) { Add-AmonEvidencePath -Context $Context -Path $exePath -Source 'Prefetch' -Reason "herramienta conocida ($($tool.ClientName))" }
+        } elseif ($kwExe -and -not $isLauncher -and -not $isJava) {
             $res.Findings.Add((New-AmonFinding -Module 'Prefetch' -Category 'KeywordName' -Title "Ejecutable con nombre relacionado: $($pf.ExecutableName)" -Status INCONCLUSIVE -Severity Low -Confidence Low `
                         -Path $(if ($exePath) { $exePath } else { $f }) -TimestampUtc $(if ($pf.LastRunTimes.Count) { $pf.LastRunTimes[0] } else { $null }) -Indicator "palabra clave '$kwExe'" -IndicatorType 'keyword' `
                         -Justification 'El nombre del ejecutable contiene una palabra clave de la investigación. Prefetch prueba que se ejecutó, no qué hacía.' -FalsePositives @('Coincidencia casual de nombre.')))

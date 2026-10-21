@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "drip",
+  "name": "Drip (Lite / X)",
+  "category": "cheat-client",
+  "description": "Cliente de trampas.",
+  "openSource": false,
+  "loaders": [],
+  "references": [],
+  "keywords": [],
+  "falsePositives": [],
+  "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+  "indicators": [
+    { "id": "drip.string.1", "type": "string", "value": "drip.gg", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/ohsogalacy-del/OmniSS/HEAD/src/jvm.rs", "note": "OmniSS 'Drip Lite' (memoria). Solo apoyo.", "encodings": ["ascii", "utf16le"], "scopes": ["raw"] },
+    { "id": "drip.string.2", "type": "string", "value": "driplite", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/ohsogalacy-del/OmniSS/HEAD/src/jvm.rs", "note": "OmniSS 'Drip Lite'.", "scopes": ["raw", "entries"] },
+    { "id": "drip.string.3", "type": "string", "value": ";9<C7D=CHCAL>@?DQI;MDSQRNQIMKEJ8", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/Jammy108/AstroSS/HEAD/Astro/config.py", "note": "AstroSS 'Drip Cracked #1' (cadena de javaw; versión crackeada antigua).", "scopes": ["raw", "entries"] },
+    { "id": "drip.string.4", "type": "string", "value": "0,$037ADCBDIJICA", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/Jammy108/AstroSS/HEAD/Astro/config.py", "note": "AstroSS 'Drip Cracked #3'.", "scopes": ["raw", "entries"] },
+    { "id": "drip.string.5", "type": "string", "value": "neverlack.in", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://gist.githubusercontent.com/synthedev2/bfd1d6af8d4456f803e2c6822cd382df/raw/LSASS.md", "note": "Gist de Azran (2018), lista de LSASS: 'Drip Client'. Antiguo.", "encodings": ["ascii", "utf16le"], "scopes": ["raw"] }
+  ]
+}

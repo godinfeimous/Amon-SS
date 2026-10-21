@@ -11,7 +11,7 @@
 
 Import-Module (Join-Path $PSScriptRoot 'Core.psm1') -DisableNameChecking
 
-$script:StatusOrder = @{ 'CORRELATED' = 0; 'DETECTED' = 1; 'INCONCLUSIVE' = 2; 'INFO' = 3; 'NOT DETECTED' = 4 }
+$script:StatusOrder = @{ 'CORRELATED' = 0; 'DETECTED' = 1; 'INCONCLUSIVE' = 2; 'INFO' = 3; 'NOT DETECTED' = 4; 'NOT COVERED' = 5 }
 $script:SeverityOrder = @{ 'High' = 0; 'Medium' = 1; 'Low' = 2; 'Info' = 3 }
 
 #region Modelo
@@ -96,6 +96,7 @@ function New-AmonReportModel {
                 }
             })
         ModulesWithoutAccess = @($results | Where-Object { $_.Status -eq 'NoAccess' } | ForEach-Object DisplayName)
+        Outcome = $(if ($Correlation) { $Correlation.Outcome } else { $null })
         ClientVerdicts = @(if ($Correlation) { $Correlation.ClientVerdicts | ForEach-Object { ConvertTo-AmonReportValue $_ } })
         Findings = @($allFindings | ForEach-Object { ConvertTo-AmonReportFinding $_ })
         FilesAnalyzed = $files
@@ -138,6 +139,7 @@ function ConvertTo-AmonReportText {
     & $line ("Equipo / usuario: {0} / {1} ({2})" -f $Model.Subject.ComputerName, $Model.Subject.UserName, $Model.Subject.UserSid)
     & $line ("Sistema         : {0}   Administrador: {1}" -f $Model.Subject.OperatingSystem, $Model.Subject.IsAdmin)
     & $line ("Herramienta     : {0} v{1} ({2}) - PowerShell {3}" -f $Model.Tool.Name, $Model.Tool.Version, $Model.Tool.BuildDate, $Model.Tool.PowerShell)
+    if ($Model.Outcome) { & $line ("Resultado       : {0} (para revisión humana)" -f $Model.Outcome) }
 
     & $section 'ALCANCE AUTORIZADO'
     foreach ($s in $Model.AuthorizedScope) { & $line "  - $s" }
@@ -147,10 +149,15 @@ function ConvertTo-AmonReportText {
     foreach ($m in $Model.Modules) { & $line ('  {0,-34} {1,-11} {2,10} {3,10} {4,9}' -f $m.DisplayName, $m.Status, $m.ArtifactsReviewed, $m.Findings, $m.DurationMs) }
 
     & $section 'VEREDICTO POR CLIENTE (para revisión humana)'
-    foreach ($v in $Model.ClientVerdicts) {
+    # Solo los clientes con algún indicio llevan justificación; el resto cabe en dos líneas.
+    foreach ($v in @($Model.ClientVerdicts | Where-Object { $_.Status -notin @('NOT DETECTED', 'NOT COVERED') })) {
         & $line ('  [{0,-12}] {1}' -f $v.Status, $v.Client)
         & $line ('                 {0}' -f $v.Justification)
     }
+    $nd = @($Model.ClientVerdicts | Where-Object Status -EQ 'NOT DETECTED' | ForEach-Object Client)
+    $nc = @($Model.ClientVerdicts | Where-Object Status -EQ 'NOT COVERED' | ForEach-Object Client)
+    if ($nd.Count) { & $line ("  Sin indicadores ({0}): {1}" -f $nd.Count, ($nd -join ', ')) }
+    if ($nc.Count) { & $line ("  Sin firmas verificables, no comprobables por archivo ({0}): {1}" -f $nc.Count, ($nc -join ', ')) }
 
     & $section ("HALLAZGOS ({0})" -f $Model.Findings.Count)
     foreach ($f in $Model.Findings) {
@@ -200,6 +207,8 @@ function ConvertTo-AmonReportHtml {
     $sb = New-Object System.Text.StringBuilder
     $w = { param($s) [void]$sb.Append($s) }
     $badge = { param($s) "<span class=""badge b-$(([string]$s).Replace(' ', '-').ToLowerInvariant())"">$(& $e $s)</span>" }
+    $oc = switch ([string]$Model.Outcome) { 'INDICADORES ENCONTRADOS' { 'o-found' } 'REVISAR A MANO' { 'o-review' } default { 'o-clean' } }
+    $outcomeHtml = if ($Model.Outcome) { "<div class=""outcome $oc"">$(& $e $Model.Outcome)</div>" } else { '' }
     & $w @"
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -221,7 +230,9 @@ tr.hl td{background:#1e0f2e}
 .mono{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;font-size:12px;word-break:break-all}
 .badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.06em;white-space:nowrap}
 .b-correlated,.b-detected{background:#3f0a1c;color:var(--red)}.b-inconclusive{background:#3a2e05;color:var(--warn)}
-.b-not-detected{background:#08301a;color:var(--green)}.b-info{background:#1b1433;color:var(--lav)}
+.b-not-detected{background:#08301a;color:var(--green)}.b-info,.b-not-covered{background:#1b1433;color:var(--lav)}
+.outcome{display:inline-block;margin-top:18px;padding:8px 16px;border-radius:10px;font-weight:800;letter-spacing:.12em}
+.o-found{background:#3f0a1c;color:var(--red)}.o-review{background:#3a2e05;color:var(--warn)}.o-clean{background:#08301a;color:var(--green)}
 .b-completed{background:#08301a;color:var(--green)}.b-partial,.b-noaccess,.b-cancelled{background:#3a2e05;color:var(--warn)}.b-failed{background:#3f0a1c;color:var(--red)}
 .card{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--muted);border-radius:10px;padding:14px 18px;margin:12px 0}
 .card.s-correlated,.card.s-detected{border-left-color:var(--red)}.card.s-inconclusive{border-left-color:var(--warn)}.card.s-info{border-left-color:var(--lav)}
@@ -235,14 +246,23 @@ ul{margin:6px 0 0 18px;padding:0}li{margin:2px 0}.muted{color:var(--muted)}
 <div>Periodo <b>$(& $e $Model.Window.SinceUtc) → $(& $e $Model.Window.UntilUtc)</b></div><div>Zona <b>$(& $e $Model.TimeZone)</b></div>
 <div>Equipo <b>$(& $e $Model.Subject.ComputerName)</b> · usuario <b>$(& $e $Model.Subject.UserName)</b></div><div>Administrador <b>$(& $e $Model.Subject.IsAdmin)</b></div>
 <div>Herramienta <b>v$(& $e $Model.Tool.Version)</b> ($(& $e $Model.Tool.BuildDate))</div><div>PowerShell <b>$(& $e $Model.Tool.PowerShell)</b></div>
-</div></header>
+</div>$outcomeHtml</header>
 <h2>CONCLUSIÓN PARA REVISIÓN HUMANA</h2><div class="conclusion">$(& $e $Model.Conclusion)</div>
 <h2>ALCANCE AUTORIZADO</h2><ul>
 "@
     foreach ($s in $Model.AuthorizedScope) { & $w "<li>$(& $e $s)</li>" }
-    & $w '</ul><h2>VEREDICTO POR CLIENTE</h2><table><tr><th>Cliente</th><th>Estado</th><th>Justificación</th></tr>'
-    foreach ($v in $Model.ClientVerdicts) { & $w "<tr><td>$(& $e $v.Client)</td><td>$(& $badge $v.Status)</td><td>$(& $e $v.Justification)</td></tr>" }
-    & $w "</table><h2>HALLAZGOS ($($Model.Findings.Count))</h2>"
+    & $w '</ul><h2>VEREDICTO POR CLIENTE</h2>'
+    $flagged = @($Model.ClientVerdicts | Where-Object { $_.Status -notin @('NOT DETECTED', 'NOT COVERED') })
+    if ($flagged.Count) {
+        & $w '<table><tr><th>Cliente</th><th>Estado</th><th>Justificación</th></tr>'
+        foreach ($v in $flagged) { & $w "<tr><td>$(& $e $v.Client)</td><td>$(& $badge $v.Status)</td><td>$(& $e $v.Justification)</td></tr>" }
+        & $w '</table>'
+    } else { & $w '<p>Ningún cliente con indicadores.</p>' }
+    $nd = @($Model.ClientVerdicts | Where-Object Status -EQ 'NOT DETECTED' | ForEach-Object Client)
+    $nc = @($Model.ClientVerdicts | Where-Object Status -EQ 'NOT COVERED' | ForEach-Object Client)
+    if ($nd.Count) { & $w "<p>$(& $badge 'NOT DETECTED') $(& $e ($nd -join ', '))</p>" }
+    if ($nc.Count) { & $w "<p class=""muted"">$(& $badge 'NOT COVERED') Sin firmas verificables, no comprobables por archivo: $(& $e ($nc -join ', '))</p>" }
+    & $w "<h2>HALLAZGOS ($($Model.Findings.Count))</h2>"
     foreach ($f in $Model.Findings) {
         $cls = ([string]$f.Status).Replace(' ', '-').ToLowerInvariant()
         & $w "<div class=""card s-$cls""><h3>$(& $badge $f.Status) $(& $e $f.Title)</h3><div class=""kv"">"
@@ -298,9 +318,13 @@ function Export-AmonReport {
     if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
     $utf8 = New-Object System.Text.UTF8Encoding($false)
     $out = [System.Collections.Generic.List[object]]::new()
+    # Un reporte exportado no se sobrescribe nunca: su SHA-256 puede estar anotado en un ticket.
+    # Exportar otra vez la misma revisión crea <id>-2, <id>-3...
+    $base = [string]$Model.ReviewId; $n = 1
+    while (Test-Path -LiteralPath (Join-Path $dir "$base.sha256")) { $n++; $base = "$($Model.ReviewId)-$n" }
     foreach ($fmt in $Formats) {
         $f = $fmt.ToLowerInvariant()
-        $path = Join-Path $dir "$($Model.ReviewId).$f"
+        $path = Join-Path $dir "$base.$f"
         $content = switch ($f) {
             'json' { $Model | ConvertTo-Json -Depth 12 }
             'txt' { ConvertTo-AmonReportText -Model $Model }
@@ -310,7 +334,7 @@ function Export-AmonReport {
         [IO.File]::WriteAllText($path, $content, $utf8)
         $out.Add([pscustomobject]@{ Format = $f; Path = $path; Sha256 = (Get-AmonStringSha256 -Path $path) })
     }
-    $manifest = Join-Path $dir "$($Model.ReviewId).sha256"
+    $manifest = Join-Path $dir "$base.sha256"
     $lines = @($out | ForEach-Object { '{0} *{1}' -f $_.Sha256, [IO.Path]::GetFileName($_.Path) })
     [IO.File]::WriteAllText($manifest, (($lines -join "`n") + "`n"), $utf8)
     [pscustomobject]@{ Files = $out.ToArray(); Manifest = $manifest; Directory = $dir }

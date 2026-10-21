@@ -4,21 +4,25 @@
     ✦ AMON SS ✦ - Advanced Minecraft Forensic Suite.
 
 .DESCRIPTION
-    Herramienta forense de solo lectura para revisiones SS (ScreenShare) CONSENTIDAS de
-    Minecraft Java Edition. Analiza instancias y mods, firmas de clientes modificados,
-    procesos, Prefetch, papelera, USN Journal, Recent, UserAssist y eventos de Windows, y
-    correlaciona las evidencias en una línea temporal y un reporte verificable.
+    Herramienta forense de solo lectura para revisiones SS (ScreenShare) de Minecraft Java
+    Edition. Analiza instancias y mods, firmas de clientes modificados, procesos, Prefetch,
+    papelera, USN Journal, Recent, UserAssist y eventos de Windows, y correlaciona las
+    evidencias en una línea temporal y un reporte verificable.
+
+    Al abrirse lo hace todo solo: escanea, muestra el resultado y guarda el reporte. El
+    revisor solo pulsa una tecla al final. El consentimiento lo cubren los términos de la SS
+    del servidor; el reporte deja constancia de quién y cuándo ejecutó la revisión.
 
     No envía datos a ningún sitio, no modifica el sistema, no finaliza procesos y no emite
     sanciones: la conclusión es siempre para revisión humana.
 
 .PARAMETER Scan
-    Modo no interactivo: 'Full' o un módulo concreto. Requiere -Consent.
+    Modo no interactivo: 'Full' o un módulo concreto.
 .PARAMETER Modules
-    Con -Scan Full, limita los módulos (Minecraft, Signatures, Processes, Prefetch, Recent,
-    UserAssist, Events, Temp, RecycleBin, USNJournal).
+    Limita los módulos del escaneo completo (Minecraft, Signatures, Processes, Memory, Prefetch, BAM, PCA,
+    ShimCache, Recent, UserAssist, Events, Tamper, Temp, RecycleBin, USNJournal).
 .PARAMETER Consent
-    Confirma que el propietario del equipo dio su consentimiento explícito (modo no interactivo).
+    Obsoleto: se acepta por compatibilidad y no hace nada.
 .PARAMETER ConsentNote
     Texto libre que se guarda en el reporte (p. ej. referencia del ticket o nick del jugador).
 .PARAMETER Days
@@ -27,6 +31,8 @@
     Formatos a exportar en modo no interactivo: txt, json, html.
 .PARAMETER OutputPath
     Carpeta de reportes (por defecto %LOCALAPPDATA%\AmonSS\reports).
+.PARAMETER NoElevate
+    No ofrece reiniciar como administrador.
 .PARAMETER VerifyManifest
     Verifica la integridad de un reporte a partir de su manifiesto .sha256 y termina
     (código 0 si está íntegro, 1 si algún archivo falta o fue alterado).
@@ -37,11 +43,11 @@
 .EXAMPLE
     powershell -NoProfile -ExecutionPolicy RemoteSigned -File .\Start-AmonSS.ps1
 .EXAMPLE
-    powershell -NoProfile -File .\Start-AmonSS.ps1 -Scan Full -Consent -ConsentNote "Ticket #123" -Report json,html
+    powershell -NoProfile -File .\Start-AmonSS.ps1 -Scan Full -ConsentNote "Ticket #123" -Report json,html
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('Full', 'Minecraft', 'Signatures', 'Processes', 'Prefetch', 'Recent', 'UserAssist', 'Events', 'Temp', 'RecycleBin', 'USNJournal')]
+    [ValidateSet('Full', 'Minecraft', 'Signatures', 'Processes', 'Memory', 'Prefetch', 'BAM', 'PCA', 'ShimCache', 'Recent', 'UserAssist', 'Events', 'Tamper', 'Temp', 'RecycleBin', 'USNJournal')]
     [string]$Scan,
     [string[]]$Modules,
     [switch]$Consent,
@@ -53,7 +59,10 @@ param(
     [ValidateSet('Auto', 'Full', 'Safe', 'Ascii')][string]$Glyphs,
     [switch]$NoAnimation,
     [string]$VerifyManifest,
-    [switch]$VerifyPackage
+    [switch]$VerifyPackage,
+    [switch]$NoElevate,
+    # Interno: lo pasa la copia reabierta como administrador para no volver a ofrecerlo.
+    [switch]$Elevated
 )
 
 $ErrorActionPreference = 'Stop'
@@ -68,11 +77,11 @@ function Split-AmonListArgument {
     return @($out | ForEach-Object { $v = $_; $Allowed | Where-Object { $_ -ieq $v } | Select-Object -First 1 } | Select-Object -Unique)
 }
 if ($Report) { $Report = Split-AmonListArgument -Value $Report -Allowed @('txt', 'json', 'html') -Name 'Report' }
-if ($Modules) { $Modules = Split-AmonListArgument -Value $Modules -Allowed @('Minecraft', 'Signatures', 'Processes', 'Prefetch', 'Recent', 'UserAssist', 'Events', 'Temp', 'RecycleBin', 'USNJournal') -Name 'Modules' }
+if ($Modules) { $Modules = Split-AmonListArgument -Value $Modules -Allowed @('Minecraft', 'Signatures', 'Processes', 'Memory', 'Prefetch', 'BAM', 'PCA', 'ShimCache', 'Recent', 'UserAssist', 'Events', 'Tamper', 'Temp', 'RecycleBin', 'USNJournal') -Name 'Modules' }
 
 $script:Root = $PSScriptRoot
 # Orden de dependencias: cada módulo reutiliza la instancia ya cargada de los anteriores.
-foreach ($m in 'Core', 'UI', 'Jar', 'Minecraft', 'Signatures', 'Processes', 'Prefetch', 'Recent', 'UserAssist', 'Events',
+foreach ($m in 'Core', 'UI', 'Jar', 'Minecraft', 'Signatures', 'Processes', 'Memory', 'Prefetch', 'ExecutionArtifacts', 'Recent', 'UserAssist', 'Events', 'Tamper',
     'TempSweep', 'RecycleBin', 'USNJournal', 'Correlation', 'Timeline', 'Reports', 'Update', 'Views', 'Orchestrator') {
     Import-Module (Join-Path $script:Root "modules\$m.psm1") -Force -DisableNameChecking
 }
@@ -103,6 +112,7 @@ $script:Version = Get-AmonVersionInfo
 $script:Settings = Get-AmonSettings
 $script:Session = $null
 $script:LastScan = $null
+$script:LastExport = $null
 $script:Prog = @{ Index = 0; Total = 1; Name = '' }
 
 #region Utilidades de sesión
@@ -124,7 +134,7 @@ function Show-AmonHeader {
 }
 
 function New-AmonSession {
-    param([int]$WindowDays, [string]$Note, [string]$ConsentText)
+    param([int]$WindowDays, [string]$Note)
     $d = if ($WindowDays -gt 0) { $WindowDays } else { [int]$script:Settings.defaultDays }
     if ($d -le 0) { $d = 7 }
     $ctx = New-AmonContext -Days $d -Settings $script:Settings
@@ -133,7 +143,10 @@ function New-AmonSession {
         $overall = 100.0 * ($script:Prog.Index + [Math]::Min(100, [Math]::Max(0, $pct)) / 100.0) / [Math]::Max(1, $script:Prog.Total)
         Write-AmonProgress -Percent $overall -Activity ("{0}/{1}  {2}" -f ($script:Prog.Index + 1), $script:Prog.Total, $script:Prog.Name) -Detail $detail -Count $count
     }
-    $ctx.AuthorizedScope.Add($ConsentText)
+    # Sin pregunta de consentimiento (lo cubren los términos de la SS del servidor): el reporte
+    # deja constancia de quién, dónde y cuándo se ejecutó la revisión.
+    $ctx.AuthorizedScope.Add(("Revisión SS ejecutada por el usuario {0} en {1} el {2}{3}; el consentimiento se rige por los términos de la SS del servidor." -f `
+                $env:USERNAME, $env:COMPUTERNAME, (Format-AmonTimestamp ([datetime]::UtcNow)), $(if ($ctx.IsAdmin) { ' (como administrador)' } else { '' })))
     if ($Note) { $ctx.AuthorizedScope.Add("Referencia del revisor: $Note") }
     return $ctx
 }
@@ -188,84 +201,140 @@ function Invoke-AmonSingleModule {
 
 #endregion
 
-#region Pantallas del menú
+#region Revisión automática y menús de una tecla
 
-function Request-AmonConsent {
-    $w = (Get-AmonPanelWidth) - 4
-    $text = @(
-        'Amon SS solo debe usarse con el consentimiento explícito del propietario del equipo.',
-        'Todas las operaciones son de solo lectura: no se modifica, restaura ni elimina nada, no se finalizan procesos y no se envía ningún dato fuera del equipo.',
-        'Se analizarán carpetas de Minecraft, procesos relevantes y artefactos de Windows relacionados con la revisión. Los archivos personales no relacionados solo se cuentan.',
-        'El resultado es una conclusión para revisión humana; Amon SS no emite sanciones.'
-    )
-    $lines = @(); foreach ($t in $text) { $lines += @(Split-AmonWrap -Text $t -Width $w); $lines += '' }
-    Write-AmonBox -Title 'CONSENTIMIENTO' -Lines $lines[0..($lines.Count - 2)]
-    if (-not (Read-AmonConfirm -Prompt '¿El propietario del equipo autoriza esta revisión?' -Default $false)) { return $null }
-    $note = Read-AmonInput -Prompt 'Referencia opcional (ticket, nick del jugador; Enter para omitir)'
-    return [pscustomobject]@{ Note = $note; Text = ("Consentimiento del propietario confirmado por el operador el {0} en {1} (usuario {2})." -f (Format-AmonTimestamp ([datetime]::UtcNow)), $env:COMPUTERNAME, $env:USERNAME) }
+function Start-AmonElevated {
+    # Reabre Amon SS como administrador (aviso de UAC de Windows). Si se rechaza, se sigue igual.
+    # La copia elevada recibe las mismas opciones (entre comillas: pueden llevar espacios).
+    $q = { param($v) '"{0}"' -f ([string]$v).Replace('"', '') }
+    $argList = @('-NoProfile', '-ExecutionPolicy', 'RemoteSigned', '-File', (& $q $PSCommandPath), '-Elevated')
+    if ($Days -gt 0) { $argList += @('-Days', [string]$Days) }
+    if ($NoAnimation) { $argList += '-NoAnimation' }
+    if ($Modules) { $argList += @('-Modules', (& $q ($Modules -join ','))) }
+    if ($OutputPath) { $argList += @('-OutputPath', (& $q $OutputPath)) }
+    if ($ConsentNote) { $argList += @('-ConsentNote', (& $q $ConsentNote)) }
+    if ($Theme) { $argList += @('-Theme', $Theme) }
+    if ($Glyphs) { $argList += @('-Glyphs', $Glyphs) }
+    try {
+        Start-Process -FilePath (Get-Process -Id $PID).Path -Verb RunAs -ArgumentList $argList -ErrorAction Stop | Out-Null
+        Write-AmonStatus -Label 'Administrador' -Value 'NUEVA VENTANA' -State Ok -Detail 'la revisión continúa en la ventana de administrador'
+        return $true
+    } catch {
+        Write-AmonWarning -Message 'No se concedió el permiso de administrador: la revisión sigue sin él.'
+        return $false
+    }
 }
 
-function Get-AmonMainMenuItems {
-    @(
-        @{ Key = '01'; Label = 'FULL FORENSIC SCAN'; Description = 'Todos los módulos en orden, correlación y reporte' },
-        @{ Key = '02'; Label = 'MINECRAFT ANALYSIS'; Description = 'Instancias, loaders, mods instalados y cargados' },
-        @{ Key = '03'; Label = 'CHEAT SIGNATURE SCANNER'; Description = 'Firmas de clientes en JAR, configuración y logs' },
-        @{ Key = '04'; Label = 'PROCESS INSPECTOR'; Description = 'Java y launchers en ejecución' },
-        @{ Key = '05'; Label = 'PREFETCH ANALYZER'; Description = 'Ejecuciones registradas (requiere administrador)' },
-        @{ Key = '06'; Label = 'RECYCLE BIN FORENSICS'; Description = 'Metadatos $I/$R y actividad de 7 días' },
-        @{ Key = '07'; Label = 'NTFS / USN JOURNAL'; Description = 'Creación, borrado y renombrado (administrador)' },
-        @{ Key = '08'; Label = 'RECENT & USERASSIST'; Description = 'Accesos recientes y programas iniciados' },
-        @{ Key = '09'; Label = 'WINDOWS EVENT ANALYSIS'; Description = '4688, 1102, 104, Defender e inicio automático' },
-        @{ Key = '10'; Label = 'FORENSIC TIMELINE'; Description = 'Línea temporal unificada de la sesión' },
-        @{ Key = '11'; Label = 'EVIDENCE REPORTS'; Description = 'Exportar TXT/JSON/HTML y verificar integridad' },
-        @{ Key = '12'; Label = 'SETTINGS'; Description = 'Tema, glifos, periodo, reportes y actualizaciones' },
-        @{ Separator = $true },
-        @{ Key = '00'; Label = 'EXIT'; Hollow = $true }
-    )
-}
-
-function Invoke-AmonMenuFullScan {
+function Invoke-AmonFullReview {
+    # Escaneo completo + veredicto + reporte, sin preguntar nada.
+    param([string[]]$Modules)
     $ctx = $script:Session
-    $catalog = @(Get-AmonModuleCatalog)
-    $sel = [System.Collections.Generic.List[string]]::new()
-    foreach ($k in (Get-AmonDefaultModuleSelection -Settings $script:Settings)) { $sel.Add($k) }
-    $admin = $ctx.IsAdmin
+    $ctx.CancelRequested = $false
+    $mods = if ($Modules) { $Modules } else { Get-AmonDefaultModuleSelection -Settings $script:Settings }
+    $script:LastScan = Invoke-AmonScanWithProgress -Context $ctx -Modules $mods
+    Show-AmonScanSummary -Scan $script:LastScan
+    $script:LastExport = Export-AmonSessionReport
+}
+
+function Invoke-AmonAutoReview {
+    # Flujo por defecto: todo automático; el revisor solo pulsa una tecla al final.
+    Show-AmonHeader -Clear
+    if (-not $script:Session.IsAdmin -and -not $Elevated -and -not $NoElevate) {
+        $k = Read-AmonKey -Prompt 'Sin administrador no se leen Prefetch, USN Journal ni el registro de Seguridad.  [A] reabrir como administrador  ·  [Enter] seguir así' `
+            -Keys @('a', 'enter', 'esc') -Default 'enter' -TimeoutSeconds 10
+        if ($k -eq 'a' -and (Start-AmonElevated)) { return }
+    }
+    Write-AmonStatus -Label 'Revisión' -Value $script:Session.ReviewId -State Info -Detail ("periodo de {0} días · {1}" -f $script:Session.Days, (Get-AmonTimeZoneLabel))
+    Invoke-AmonFullReview -Modules $Modules
+    Invoke-AmonFinalMenu
+}
+
+function Invoke-AmonFinalMenu {
     while ($true) {
-        $lines = @()
-        for ($i = 0; $i -lt $catalog.Count; $i++) {
-            $m = $catalog[$i]
-            $on = $sel.Contains($m.Key)
-            $box = if ($on) { Format-AmonColor (Get-AmonGlyph 'Square') 'success' } else { Format-AmonColor (Get-AmonGlyph 'DiamondHollow') 'muted' }
-            $req = ''
-            if ($m.RequiresAdmin) {
-                $noAdmin = if ($m.PSObject.Properties['WithoutAdmin']) { $m.WithoutAdmin } else { 'requiere administrador (se informará SIN ACCESO)' }
-                $req = if ($admin) { Format-AmonColor ' admin: sí' 'success' } else { Format-AmonColor " $noAdmin" 'warning' }
-            }
-            $lines += ('{0} {1} {2}' -f (Format-AmonColor ('[{0:00}]' -f ($i + 1)) 'title' -Bold), $box, (Format-AmonColor $m.Name 'primary')) + $req
-        }
-        $lines += '---'
-        $lines += (Format-AmonColor 'Ubicaciones que se inspeccionarán:' 'secondary')
-        foreach ($s in (Get-AmonScanScope -Context $ctx -Modules $sel.ToArray())) { $lines += '  ' + (Get-AmonGlyph 'Arrow') + ' ' + (ConvertTo-AmonSafeText $s) }
-        $lines += '---'
-        $lines += (Format-AmonColor ("Periodo: últimos {0} días. Tiempo máximo por módulo: {1} s. Ctrl+C cancela de forma segura." -f $ctx.Days, $script:Settings.moduleTimeoutSeconds) 'muted')
-        Write-AmonBox -Title 'ALCANCE DE LA REVISIÓN' -Lines $lines
-        $ans = Read-AmonInput -Prompt 'Número para activar/desactivar, Enter para comenzar, 0 para volver'
-        if ($null -eq $ans -or $ans -eq '0') { return }
-        if ($ans -eq '') { break }
-        $n = 0
-        if ([int]::TryParse($ans, [ref]$n) -and $n -ge 1 -and $n -le $catalog.Count) {
-            $k = $catalog[$n - 1].Key
-            if ($sel.Contains($k)) { [void]$sel.Remove($k) } else { $sel.Add($k) }
+        Show-AmonMenu -Title 'REVISIÓN TERMINADA' -Items @(
+            @{ Key = 'H'; Label = 'ABRIR EL REPORTE'; Description = 'versión HTML en el navegador' },
+            @{ Key = 'D'; Label = 'DETALLE'; Description = 'resultados de cada módulo' },
+            @{ Key = 'T'; Label = 'LÍNEA TEMPORAL'; Description = "últimos $($script:Session.Days) días" },
+            @{ Key = 'R'; Label = 'REPETIR'; Description = 'volver a escanear todo' },
+            @{ Key = 'M'; Label = 'MÁS OPCIONES'; Description = 'módulos sueltos, verificación y ajustes' },
+            @{ Separator = $true },
+            @{ Key = 'Q'; Label = 'SALIR'; Hollow = $true })
+        # Enter no hace nada a propósito: un Enter sin querer no puede cerrar la revisión.
+        $k = Read-AmonKey -Prompt 'Pulsa una tecla' -Keys @('h', 'd', 't', 'r', 'm', 'q', 'esc') -Default 'q'
+        switch ($k) {
+            'h' { Open-AmonReport }
+            'd' { foreach ($r in @($script:Session.Results.Values | Where-Object { $_.Module -ne 'Correlation' })) { Show-AmonResultView -Result $r -Context $script:Session } }
+            't' { Show-AmonSessionTimeline }
+            'r' { Invoke-AmonFullReview -Modules $Modules }
+            'm' { Invoke-AmonMoreMenu }
+            default { return }
         }
     }
-    if (-not $sel.Count) { Write-AmonWarning -Message 'No hay módulos seleccionados.'; return }
-    if (-not (Read-AmonConfirm -Prompt '¿Confirmas que el propietario autoriza inspeccionar estas ubicaciones?' -Default $true)) { return }
-    $ctx.AuthorizedScope.Add(('Escaneo completo autorizado ({0}): {1}' -f (Format-AmonTimestamp ([datetime]::UtcNow)), ($sel -join ', ')))
-    $script:LastScan = Invoke-AmonScanWithProgress -Context $ctx -Modules $sel.ToArray()
-    Show-AmonScanSummary -Scan $script:LastScan
-    if (Read-AmonConfirm -Prompt '¿Exportar el reporte ahora?' -Default $true) { $null = Export-AmonSessionReport }
-    if (Read-AmonConfirm -Prompt '¿Ver el detalle de cada módulo?' -Default $false) {
-        foreach ($r in @($ctx.Results.Values | Where-Object { $_.Module -ne 'Correlation' })) { Show-AmonResultView -Result $r -Context $ctx }
+}
+
+function Open-AmonReport {
+    # Abre el HTML con el programa predeterminado (un archivo local: no hay red de por medio).
+    $html = @($script:LastExport.Files | Where-Object Format -EQ 'html' | Select-Object -First 1)
+    if (-not $html.Count) { Write-AmonWarning -Message 'Esta revisión no exportó un reporte HTML (revisa reportFormats en los ajustes).'; return }
+    if ([Console]::IsInputRedirected) { Write-AmonStatus -Label 'Reporte' -Value 'HTML' -State Info -Detail $html[0].Path; return }
+    try { Start-Process -FilePath $html[0].Path | Out-Null; Write-AmonStatus -Label 'Reporte' -Value 'ABIERTO' -State Ok -Detail $html[0].Path }
+    catch { Write-AmonWarning -Message "No se pudo abrir el reporte: $($_.Exception.Message)" }
+}
+
+function Invoke-AmonMoreMenu {
+    while ($true) {
+        Show-AmonMenu -Title 'MÁS OPCIONES' -Items @(
+            @{ Key = '1'; Label = 'MINECRAFT'; Description = 'instancias, loaders, mods instalados y cargados' },
+            @{ Key = '2'; Label = 'FIRMAS'; Description = 'clientes en JAR, configuración y logs' },
+            @{ Key = '3'; Label = 'PROCESOS'; Description = 'Java y launchers en ejecución' },
+            @{ Key = 'J'; Label = 'MEMORIA DE JAVA'; Description = 'firmas cargadas ahora en Minecraft (inyectados)' },
+            @{ Key = '4'; Label = 'PREFETCH'; Description = 'ejecuciones registradas (administrador)' },
+            @{ Key = '5'; Label = 'PAPELERA'; Description = 'metadatos $I/$R y actividad reciente' },
+            @{ Key = '6'; Label = 'USN JOURNAL'; Description = 'creación, borrado y renombrado (administrador)' },
+            @{ Key = '7'; Label = 'RECENT Y USERASSIST'; Description = 'accesos recientes y programas iniciados' },
+            @{ Key = '8'; Label = 'EVENTOS DE WINDOWS'; Description = '4688, 1102, 104, Defender e inicio automático' },
+            @{ Key = '9'; Label = 'BAM, PCA Y SHIMCACHE'; Description = 'programas ejecutados según Windows' },
+            @{ Key = 'B'; Label = 'EVASIÓN'; Description = 'servicios forenses detenidos y cambios de hora' },
+            @{ Key = 'X'; Label = 'ESCANEAR RUTA EXTRA'; Description = 'una carpeta o archivo concreto con las firmas' },
+            @{ Key = 'E'; Label = 'EXPORTAR DE NUEVO'; Description = 'reporte con los resultados actuales' },
+            @{ Key = 'V'; Label = 'VERIFICAR UN REPORTE'; Description = 'comprobar su manifiesto .sha256' },
+            @{ Key = 'S'; Label = 'AJUSTES'; Description = 'tema, periodo, carpetas y actualizaciones' },
+            @{ Separator = $true },
+            @{ Key = 'Q'; Label = 'VOLVER'; Hollow = $true })
+        $k = Read-AmonKey -Prompt 'Pulsa una tecla' -Keys @('1', '2', '3', 'j', '4', '5', '6', '7', '8', '9', 'b', 'x', 'e', 'v', 's', 'q', 'esc') -Default 'q'
+        $script:Session.CancelRequested = $false
+        switch ($k) {
+            '1' { Invoke-AmonSingleModule -Key 'Minecraft' }
+            '2' { Invoke-AmonSingleModule -Key 'Signatures' }
+            '3' { Invoke-AmonSingleModule -Key 'Processes' }
+            'j' { Invoke-AmonSingleModule -Key 'Memory' }
+            '4' { Invoke-AmonSingleModule -Key 'Prefetch' }
+            '5' {
+                if (-not $script:Session.Results['USNJournal'] -and $script:Session.IsAdmin) { Invoke-AmonSingleModule -Key 'USNJournal' }
+                Invoke-AmonSingleModule -Key 'RecycleBin'
+            }
+            '6' { Invoke-AmonSingleModule -Key 'USNJournal' }
+            '7' { Invoke-AmonSingleModule -Key 'Recent'; Invoke-AmonSingleModule -Key 'UserAssist' }
+            '8' { Invoke-AmonSingleModule -Key 'Events' }
+            '9' { Invoke-AmonSingleModule -Key 'BAM'; Invoke-AmonSingleModule -Key 'PCA'; Invoke-AmonSingleModule -Key 'ShimCache' }
+            'b' { Invoke-AmonSingleModule -Key 'Tamper' }
+            'x' {
+                $extra = Read-AmonInput -Prompt 'Ruta de la carpeta o archivo (Enter para cancelar)'
+                if ($extra -and (Test-Path -LiteralPath $extra.Trim('"'))) {
+                    # La ruta viaja como dato en el contexto, nunca como texto de código.
+                    $p = $extra.Trim('"'); $script:Session.AuthorizedScope.Add("Ruta adicional revisada con firmas: $p")
+                    if (-not $script:Session.ExtraScanPaths.Contains($p)) { $script:Session.ExtraScanPaths.Add($p) }
+                    Invoke-AmonSingleModule -Key 'Signatures'
+                } elseif ($extra) { Write-AmonWarning -Message 'Esa ruta no existe.' }
+            }
+            'e' { $script:LastExport = Export-AmonSessionReport }
+            'v' {
+                $p = Read-AmonInput -Prompt 'Ruta del manifiesto .sha256 (Enter para cancelar)'
+                if ($p -and (Test-Path -LiteralPath $p.Trim('"'))) { $null = Show-AmonIntegrity -Manifest $p.Trim('"') } elseif ($p) { Write-AmonWarning -Message 'No existe ese archivo.' }
+            }
+            's' { Invoke-AmonMenuSettings }
+            default { return }
+        }
     }
 }
 
@@ -294,30 +363,20 @@ function Show-AmonScanSummary {
     Write-AmonSection -Title 'RESUMEN'
     Write-AmonCountUp -Label 'Hallazgos CORRELATED' -Value @($all | Where-Object Status -EQ 'CORRELATED').Count -Token 'finding'
     Write-AmonCountUp -Label 'Hallazgos DETECTED' -Value @($all | Where-Object Status -EQ 'DETECTED').Count -Token 'finding'
-    Write-AmonCountUp -Label 'Hallazgos INCONCLUSIVE' -Value @($all | Where-Object Status -EQ 'INCONCLUSIVE').Count -Token 'warning'
+    Write-AmonCountUp -Label 'Hallazgos INCONCLUSIVE' -Value @($all | Where-Object { $_.Status -eq 'INCONCLUSIVE' -and $_.Category -ne 'KeywordName' }).Count -Token 'warning'
+    $names = @($all | Where-Object Category -EQ 'KeywordName').Count
+    if ($names) { Write-AmonCountUp -Label 'Solo coincidencias de nombre' -Value $names -Token 'muted' }
+    $info = @($all | Where-Object Status -EQ 'INFO').Count
+    if ($info) { Write-AmonCountUp -Label 'Información para revisar' -Value $info -Token 'secondary' }
     Write-AmonCountUp -Label 'Eventos en la línea temporal' -Value @($Scan.Timeline).Count -Token 'secondary'
     $reviewed = 0; foreach ($r in @($script:Session.Results.Values)) { $reviewed += [int]$r.ArtifactsReviewed }
     Write-AmonCountUp -Label 'Artefactos revisados' -Value $reviewed -Token 'secondary'
 }
 
-function Invoke-AmonMenuTimeline {
+function Show-AmonSessionTimeline {
     $ctx = $script:Session
-    if (-not @($ctx.Results.Values | Where-Object { $_.Events.Count }).Count) {
-        Write-AmonWarning -Message 'Todavía no hay eventos en esta sesión. Ejecuta primero el escaneo completo (01) o algún módulo.'
-        if (Read-AmonConfirm -Prompt '¿Ejecutar ahora el escaneo completo?' -Default $true) { Invoke-AmonMenuFullScan }
-        return
-    }
-    $ans = Read-AmonInput -Prompt "Días a mostrar [$($ctx.Days)] o rango 'AAAA-MM-DD AAAA-MM-DD'"
-    $since = $ctx.SinceUtc; $until = [datetime]::UtcNow.AddMinutes(5); $label = "Últimos $($ctx.Days) días"
-    if ($ans -match '^\s*(\d{4}-\d{2}-\d{2})\s+(\d{4}-\d{2}-\d{2})\s*$') {
-        $since = ([datetime]::ParseExact($Matches[1], 'yyyy-MM-dd', $null)).ToUniversalTime()
-        $until = ([datetime]::ParseExact($Matches[2], 'yyyy-MM-dd', $null)).AddDays(1).ToUniversalTime()
-        $label = "Del $($Matches[1]) al $($Matches[2]) (los datos fuera de la ventana de análisis original pueden no estar recopilados)"
-    } elseif ($ans -match '^\s*(\d{1,3})\s*$') {
-        $since = [datetime]::UtcNow.AddDays(-1 * [int]$Matches[1]); $label = "Últimos $($Matches[1]) días"
-    }
-    $rows = @(New-AmonTimeline -Context $ctx -SinceUtc $since -UntilUtc $until)
-    Show-AmonTimelineView -Rows $rows -Context $ctx -Range $label
+    $rows = @(New-AmonTimeline -Context $ctx -SinceUtc $ctx.SinceUtc -UntilUtc ([datetime]::UtcNow.AddMinutes(5)))
+    Show-AmonTimelineView -Rows $rows -Context $ctx -Range "Últimos $($ctx.Days) días"
 }
 
 function Export-AmonSessionReport {
@@ -327,7 +386,7 @@ function Export-AmonSessionReport {
     $timeline = @(New-AmonTimeline -Context $ctx)
     $model = New-AmonReportModel -Context $ctx -Correlation $corr -Timeline $timeline
     if (-not $Formats) { $Formats = @($script:Settings.reportFormats) }
-    if (-not $Directory) { $Directory = Expand-AmonPath ([string]$script:Settings.reportDirectory) }
+    if (-not $Directory) { $Directory = if ($OutputPath) { $OutputPath } else { Expand-AmonPath ([string]$script:Settings.reportDirectory) } }
     $exp = Export-AmonReport -Model $model -Directory $Directory -Formats $Formats
     $lines = @()
     foreach ($f in $exp.Files) { $lines += (Format-AmonColor $f.Format.ToUpperInvariant().PadRight(5) 'title' -Bold) + ' ' + $f.Path; $lines += '      SHA-256 ' + (Format-AmonColor $f.Sha256 'secondary') }
@@ -336,26 +395,6 @@ function Export-AmonSessionReport {
     $lines += (Format-AmonColor 'Anota el SHA-256 del reporte en el ticket: permite comprobar después que no se alteró.' 'muted')
     Write-AmonBox -Title "REPORTE $($model.ReviewId)" -Lines $lines
     return $exp
-}
-
-function Invoke-AmonMenuReports {
-    while ($true) {
-        Show-AmonMenu -Title 'EVIDENCE REPORTS' -Items @(
-            @{ Key = '1'; Label = 'EXPORTAR REPORTE DE LA SESIÓN'; Description = ($script:Settings.reportFormats -join ', ').ToUpperInvariant() },
-            @{ Key = '2'; Label = 'VERIFICAR INTEGRIDAD'; Description = 'Comprobar un manifiesto .sha256' },
-            @{ Separator = $true }, @{ Key = '0'; Label = 'VOLVER'; Hollow = $true })
-        switch (Read-AmonInput) {
-            '1' {
-                if (-not $script:Session.Results.Count) { Write-AmonWarning -Message 'No hay resultados en esta sesión todavía.'; continue }
-                $null = Export-AmonSessionReport
-            }
-            '2' {
-                $p = Read-AmonInput -Prompt 'Ruta del manifiesto .sha256'
-                if ($p -and (Test-Path -LiteralPath $p.Trim('"'))) { Show-AmonIntegrity -Manifest $p.Trim('"') } else { Write-AmonWarning -Message 'No existe ese archivo.' }
-            }
-            default { return }
-        }
-    }
 }
 
 function Show-AmonIntegrity {
@@ -370,55 +409,50 @@ function Show-AmonIntegrity {
 }
 
 function Invoke-AmonMenuSettings {
+    # Cada opción es una tecla: las de varios valores avanzan al siguiente en cada pulsación.
     while ($true) {
         $s = $script:Settings
-        Show-AmonMenu -Title 'SETTINGS' -Items @(
+        Show-AmonMenu -Title 'AJUSTES' -Items @(
             @{ Key = '1'; Label = 'FULL PURPLE'; Description = $(if ($s.theme -eq 'FullPurple') { 'tema actual' } else { 'degradado, bordes dobles, animación' }) },
             @{ Key = '2'; Label = 'MINIMAL PURPLE'; Description = $(if ($s.theme -eq 'MinimalPurple') { 'tema actual' } else { 'bordes simples, sin animación' }) },
             @{ Key = '3'; Label = 'CLASSIC TERMINAL'; Description = $(if ($s.theme -eq 'ClassicTerminal') { 'tema actual' } else { '16 colores, máxima compatibilidad' }) },
             @{ Separator = $true },
-            @{ Key = '4'; Label = 'GLIFOS'; Description = "actual: $($s.glyphs) (auto / full / safe / ascii)" },
-            @{ Key = '5'; Label = 'PERIODO POR DEFECTO'; Description = "$($s.defaultDays) días" },
-            @{ Key = '6'; Label = 'CARPETA DE REPORTES'; Description = (Expand-AmonPath $s.reportDirectory) },
-            @{ Key = '7'; Label = 'FORMATOS DE REPORTE'; Description = ($s.reportFormats -join ', ') },
-            @{ Key = '8'; Label = 'ANIMACIONES'; Description = $(if ($s.animations) { 'activadas' } else { 'desactivadas' }) },
-            @{ Key = '9'; Label = 'RUTA EXTRA DE INSTANCIA'; Description = 'launchers portables (MultiMC, ATLauncher...)' },
-            @{ Key = '10'; Label = 'BUSCAR ACTUALIZACIONES'; Description = $(if ($s.updates.repository) { $s.updates.repository } else { 'repositorio no configurado' }) },
-            @{ Separator = $true }, @{ Key = '0'; Label = 'VOLVER'; Hollow = $true })
-        $c = Read-AmonInput
-        switch ($c) {
+            @{ Key = 'G'; Label = 'GLIFOS'; Description = "$($s.glyphs) (pulsa para cambiar: auto, full, safe, ascii)" },
+            @{ Key = 'P'; Label = 'PERIODO'; Description = "$($s.defaultDays) días (pulsa para cambiar: 3, 7, 14, 30)" },
+            @{ Key = 'A'; Label = 'ANIMACIONES'; Description = $(if ($s.animations) { 'activadas' } else { 'desactivadas' }) },
+            @{ Key = 'C'; Label = 'CARPETA DE REPORTES'; Description = (Expand-AmonPath $s.reportDirectory) },
+            @{ Key = 'I'; Label = 'RUTA EXTRA DE INSTANCIA'; Description = 'launchers portables (MultiMC, ATLauncher...)' },
+            @{ Key = 'U'; Label = 'BUSCAR ACTUALIZACIONES'; Description = $(if ($s.updates.repository) { $s.updates.repository } else { 'repositorio no configurado' }) },
+            @{ Separator = $true }, @{ Key = 'Q'; Label = 'VOLVER'; Hollow = $true })
+        $k = Read-AmonKey -Prompt 'Pulsa una tecla' -Keys @('1', '2', '3', 'g', 'p', 'a', 'c', 'i', 'u', 'q', 'esc') -Default 'q'
+        switch ($k) {
             { $_ -in '1', '2', '3' } {
-                $name = @{ '1' = 'FullPurple'; '2' = 'MinimalPurple'; '3' = 'ClassicTerminal' }[$c]
-                Set-AmonSetting -Name 'theme' -Value $name -Persist
+                Set-AmonSetting -Name 'theme' -Value (@{ '1' = 'FullPurple'; '2' = 'MinimalPurple'; '3' = 'ClassicTerminal' }[$k]) -Persist
                 Initialize-AmonTheme
                 Show-AmonHeader -Clear
             }
-            '4' {
-                $g = Read-AmonInput -Prompt 'Glifos (auto/full/safe/ascii)'
-                if ($g -in 'auto', 'full', 'safe', 'ascii') { Set-AmonSetting -Name 'glyphs' -Value $g -Persist; Initialize-AmonTheme; Show-AmonHeader -Clear }
+            'g' {
+                $order = @('auto', 'full', 'safe', 'ascii'); $next = $order[([array]::IndexOf($order, [string]$s.glyphs) + 1) % $order.Count]
+                Set-AmonSetting -Name 'glyphs' -Value $next -Persist; Initialize-AmonTheme
             }
-            '5' {
-                $d = Read-AmonInput -Prompt 'Días (1-365)'; $n = 0
-                if ([int]::TryParse($d, [ref]$n) -and $n -ge 1 -and $n -le 365) { Set-AmonSetting -Name 'defaultDays' -Value $n -Persist; Write-AmonStatus -Label 'Periodo' -Value "$n días" -State Ok -Detail 'se aplica a la próxima revisión' }
+            'p' {
+                $order = @(3, 7, 14, 30); $i = [array]::IndexOf($order, [int]$s.defaultDays); $next = $order[($i + 1) % $order.Count]
+                Set-AmonSetting -Name 'defaultDays' -Value $next -Persist
+                Write-AmonStatus -Label 'Periodo' -Value "$next días" -State Ok -Detail 'se aplica a la próxima revisión'
             }
-            '6' {
-                $p = Read-AmonInput -Prompt 'Carpeta para los reportes'
+            'a' { Set-AmonSetting -Name 'animations' -Value (-not $s.animations) -Persist; Initialize-AmonTheme }
+            'c' {
+                $p = Read-AmonInput -Prompt 'Carpeta para los reportes (Enter para cancelar)'
                 if ($p) { Set-AmonSetting -Name 'reportDirectory' -Value $p.Trim('"') -Persist }
             }
-            '7' {
-                $f = Read-AmonInput -Prompt 'Formatos separados por coma (txt,json,html)'
-                $list = @($f -split '[,; ]+' | Where-Object { $_ -in 'txt', 'json', 'html' })
-                if ($list.Count) { Set-AmonSetting -Name 'reportFormats' -Value $list -Persist }
-            }
-            '8' { Set-AmonSetting -Name 'animations' -Value (-not $s.animations) -Persist; Initialize-AmonTheme }
-            '9' {
-                $p = Read-AmonInput -Prompt 'Ruta del directorio de juego (.minecraft de la instancia)'
+            'i' {
+                $p = Read-AmonInput -Prompt 'Directorio de juego de la instancia (Enter para cancelar)'
                 if ($p -and (Test-Path -LiteralPath $p.Trim('"'))) {
                     $paths = @($s.minecraft.extraInstancePaths) + @($p.Trim('"'))
                     Set-AmonSetting -Name 'minecraft.extraInstancePaths' -Value ($paths | Select-Object -Unique) -Persist
-                } else { Write-AmonWarning -Message 'La ruta no existe.' }
+                } elseif ($p) { Write-AmonWarning -Message 'La ruta no existe.' }
             }
-            '10' { Invoke-AmonMenuUpdate }
+            'u' { Invoke-AmonMenuUpdate }
             default { return }
         }
         $script:Settings = Get-AmonSettings -Reload
@@ -455,64 +489,19 @@ function Invoke-AmonMenuUpdate {
     } catch { Write-AmonWarning -Label 'RECHAZADA' -Message $_.Exception.Message }
 }
 
-function Invoke-AmonMainMenu {
-    while ($true) {
-        Show-AmonMenu -Title 'MAIN MENU' -Items (Get-AmonMainMenuItems)
-        $choice = Read-AmonInput
-        if ($null -eq $choice) { return }
-        # Un Enter sin querer no puede cerrar la sesión ('' se convertiría en '00').
-        if (-not $choice.Trim()) { continue }
-        $script:Session.CancelRequested = $false
-        switch ($choice.PadLeft(2, '0')) {
-            '01' { Invoke-AmonMenuFullScan }
-            '02' { Invoke-AmonSingleModule -Key 'Minecraft' }
-            '03' {
-                $extra = Read-AmonInput -Prompt 'Ruta adicional a escanear (archivo o carpeta; Enter para omitir)'
-                if ($extra -and (Test-Path -LiteralPath $extra.Trim('"'))) {
-                    # La ruta viaja como dato en el contexto, nunca como texto de código.
-                    $p = $extra.Trim('"'); $script:Session.AuthorizedScope.Add("Ruta adicional autorizada para firmas: $p")
-                    if (-not $script:Session.ExtraScanPaths.Contains($p)) { $script:Session.ExtraScanPaths.Add($p) }
-                }
-                Invoke-AmonSingleModule -Key 'Signatures'
-            }
-            '04' { Invoke-AmonSingleModule -Key 'Processes' }
-            '05' { Invoke-AmonSingleModule -Key 'Prefetch' }
-            '06' {
-                if (-not $script:Session.Results['USNJournal'] -and $script:Session.IsAdmin) { Invoke-AmonSingleModule -Key 'USNJournal' }
-                Invoke-AmonSingleModule -Key 'RecycleBin'
-            }
-            '07' { Invoke-AmonSingleModule -Key 'USNJournal' }
-            '08' { Invoke-AmonSingleModule -Key 'Recent'; Invoke-AmonSingleModule -Key 'UserAssist' }
-            '09' { Invoke-AmonSingleModule -Key 'Events' }
-            '10' { Invoke-AmonMenuTimeline }
-            '11' { Invoke-AmonMenuReports }
-            '12' { Invoke-AmonMenuSettings }
-            '00' { return }
-            default { Write-AmonWarning -Message 'Opción no válida.' }
-        }
-        Write-AmonFooter -Version $script:Version.Version -Text "Revisión $($script:Session.ReviewId)"
-    }
-}
-
 #endregion
 
 #region Modo no interactivo
 
 function Invoke-AmonCli {
-    if (-not $Consent) {
-        # Write-Error con ErrorActionPreference=Stop terminaría con código 1: se escribe en stderr y se sale con 2.
-        [Console]::Error.WriteLine('El modo no interactivo requiere -Consent: confirma así que el propietario del equipo autorizó la revisión.')
-        exit 2
-    }
-    $consentText = "Consentimiento del propietario confirmado por el operador con -Consent el $(Format-AmonTimestamp ([datetime]::UtcNow)) en $env:COMPUTERNAME (usuario $env:USERNAME)."
-    $script:Session = New-AmonSession -WindowDays $Days -Note $ConsentNote -ConsentText $consentText
+    $script:Session = New-AmonSession -WindowDays $Days -Note $ConsentNote
     Show-AmonHeader
     # Un módulo suelto lleva delante Minecraft; Temp además necesita Firmas, que es quien
     # registra los indicadores concretos que busca.
     $mods = if ($Scan -eq 'Full' -or -not $Scan) { if ($Modules) { $Modules } else { Get-AmonDefaultModuleSelection -Settings $script:Settings } }
     elseif ($Scan -eq 'Temp') { @('Minecraft', 'Signatures', 'Temp') }
     else { @('Minecraft', $Scan) | Select-Object -Unique }
-    $script:Session.AuthorizedScope.Add("Módulos autorizados: $($mods -join ', ')")
+    $script:Session.AuthorizedScope.Add("Módulos ejecutados: $($mods -join ', ')")
     $script:LastScan = Invoke-AmonScanWithProgress -Context $script:Session -Modules $mods
     Show-AmonScanSummary -Scan $script:LastScan
     if ($Report) { $null = Export-AmonSessionReport -Formats $Report -Directory $(if ($OutputPath) { $OutputPath } else { $null }) }
@@ -524,13 +513,9 @@ function Invoke-AmonCli {
 try {
     Initialize-AmonTheme -ThemeName $Theme -GlyphName $Glyphs
     if ($VerifyManifest) { $ok = Show-AmonIntegrity -Manifest $VerifyManifest; if ($ok) { exit 0 } else { exit 1 } }
-    if ($Scan -or $Consent) { Invoke-AmonCli; return }
-    Show-AmonHeader -Clear
-    $c = Request-AmonConsent
-    if (-not $c) { Write-AmonFooter -Version $script:Version.Version -Text 'Sin consentimiento: no se realizó ningún análisis.'; return }
-    $script:Session = New-AmonSession -WindowDays $Days -Note $c.Note -ConsentText $c.Text
-    Write-AmonStatus -Label 'Revisión' -Value $script:Session.ReviewId -State Info -Detail ("periodo de {0} días · {1}" -f $script:Session.Days, (Get-AmonTimeZoneLabel))
-    Invoke-AmonMainMenu
+    if ($Scan) { Invoke-AmonCli; return }
+    $script:Session = New-AmonSession -WindowDays $Days -Note $ConsentNote
+    Invoke-AmonAutoReview
     Write-AmonFooter -Version $script:Version.Version -Text 'Sesión cerrada. Ningún archivo del sistema fue modificado.'
 } finally {
     Restore-AmonConsole

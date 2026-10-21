@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "tenacity",
+  "name": "Tenacity",
+  "category": "cheat-client",
+  "description": "Cliente de trampas.",
+  "openSource": false,
+  "loaders": [],
+  "references": [],
+  "keywords": [],
+  "falsePositives": [],
+  "notes": "Indicadores de la investigación del 2026-10-21 (docs/research/02-clientes-y-ghost-clients.md); cada uno cita su fuente.",
+  "indicators": [
+    { "id": "tenacity.package.1", "type": "package", "value": "dev/tenacity/", "strength": "strong", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/lo1am0n/TenacityRC/0a1d6e5997c300d3630de35922e3de7420e114e4/dev/tenacity/Tenacity.java", "note": "Base Tenacity 5.1 (fork TenacityRC)." },
+    { "id": "tenacity.package.2", "type": "package", "value": "dev/client/tenacity/", "strength": "strong", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/Xicopannt/Tenacity-Client-4.0-Eclipse-Ready/ca92020f6daefa241c1b2c515d87d1f82168ce65/dev/client/tenacity/Tenacity.java", "note": "Tenacity 4.0 (copia 'Eclipse Ready')." },
+    { "id": "tenacity.config.1", "type": "config", "value": "Tenacity", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/lo1am0n/TenacityRC/0a1d6e5997c300d3630de35922e3de7420e114e4/dev/tenacity/Tenacity.java", "note": "DIRECTORY = new File(mc.mcDataDir, \"Tenacity\") (igual en 4.0).", "relativeTo": "gameDir" }
+  ]
+}

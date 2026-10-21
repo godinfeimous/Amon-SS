@@ -17,8 +17,8 @@
 
 Import-Module (Join-Path $PSScriptRoot 'Core.psm1') -DisableNameChecking
 
-$script:ClientCategories = @('CheatSignature', 'ClientLog', 'ClientConfig', 'ClientVersionProfile', 'ClientProcess')
-$script:ExecutionKinds = @('Log de Minecraft', 'Prefetch', 'UserAssist', 'Eventos de Windows', 'Proceso en ejecución', 'Recent')
+$script:ClientCategories = @('CheatSignature', 'ClientLog', 'ClientConfig', 'ClientVersionProfile', 'ClientProcess', 'ClientMemory', 'ExecutionEvidence', 'ShimCacheEntry', 'ToolExecution')
+$script:ExecutionKinds = @('Log de Minecraft', 'Prefetch', 'BAM', 'PCA', 'UserAssist', 'Eventos de Windows', 'Proceso en ejecución', 'Recent', 'Memoria de Java')
 $script:CategoryKind = @{
     'Signatures:CheatSignature' = 'Archivo con firma'; 'SignaturesEvidence:CheatSignature' = 'Archivo con firma'
     'Signatures:ClientLog' = 'Log de Minecraft'; 'Signatures:ClientConfig' = 'Configuración del cliente'
@@ -28,8 +28,9 @@ $script:CategoryKind = @{
 $script:ModuleKind = @{
     Minecraft = 'Minecraft'; Prefetch = 'Prefetch'; Recent = 'Recent'; UserAssist = 'UserAssist'; Events = 'Eventos de Windows'
     Processes = 'Proceso en ejecución'; RecycleBin = 'Papelera'; USNJournal = 'USN Journal'
+    BAM = 'BAM'; PCA = 'PCA'; ShimCache = 'ShimCache'; Tamper = 'Evasión'; Memory = 'Memoria de Java'
 }
-$script:StatusRank = @{ 'CORRELATED' = 0; 'DETECTED' = 1; 'INCONCLUSIVE' = 2; 'INFO' = 3; 'NOT DETECTED' = 4 }
+$script:StatusRank = @{ 'CORRELATED' = 0; 'DETECTED' = 1; 'INCONCLUSIVE' = 2; 'INFO' = 3; 'NOT DETECTED' = 4; 'NOT COVERED' = 5 }
 $script:ConfRank = @{ 'High' = 3; 'Medium' = 2; 'Low' = 1 }
 
 function Get-AmonSourceKind {
@@ -222,7 +223,8 @@ function Invoke-AmonCorrelation {
     $verdicts = [System.Collections.Generic.List[object]]::new()
     $scanned = if ($Context.Results['Signatures']) { $Context.Results['Signatures'].ArtifactsReviewed } else { 0 }
     $noAccess = @($Context.Results.Values | Where-Object { $_.Status -eq 'NoAccess' } | ForEach-Object DisplayName)
-    $clients = if ($Context.Signatures) { @($Context.Signatures.Clients) } else { @() }
+    # El software de macros no entra en el veredicto: solo deja hallazgos INFO para revisar.
+    $clients = if ($Context.Signatures) { @($Context.Signatures.Clients | Where-Object { $_.Category -ne 'macro' }) } else { @() }
     foreach ($c in $clients) {
         $fs = @($all | Where-Object { $_.ClientId -eq $c.Id })
         $strong = @($fs | Where-Object Category -NE 'KeywordName')
@@ -232,15 +234,22 @@ function Invoke-AmonCorrelation {
         elseif ($strong | Where-Object Status -EQ 'DETECTED') {
             $status = 'DETECTED'
             $just = 'Indicador presente (' + (@($strong | Where-Object Status -EQ 'DETECTED' | Select-Object -First 3 | ForEach-Object { "$($_.Title): $($_.Path)" }) -join '; ') + ') sin fuentes independientes adicionales dentro del alcance analizado.'
-        } elseif ($fs | Where-Object Status -EQ 'INCONCLUSIVE') {
+        } elseif ($strong | Where-Object Status -EQ 'INCONCLUSIVE') {
             $status = 'INCONCLUSIVE'
-            $just = 'Solo indicadores débiles, no validados o coincidencias de nombre (' + (@($fs | Where-Object Status -EQ 'INCONCLUSIVE' | Select-Object -First 3 | ForEach-Object { $_.Title }) -join '; ') + '). Requiere revisión manual.'
+            $just = 'Solo indicadores débiles o no validados (' + (@($strong | Where-Object Status -EQ 'INCONCLUSIVE' | Select-Object -First 3 | ForEach-Object { $_.Title }) -join '; ') + '). Requiere revisión manual.'
         } elseif ($c.Indicators.Count -eq 0) {
-            $status = 'INCONCLUSIVE'
-            $just = 'No hay indicadores verificables para este cliente; el escaneo de archivos no puede confirmarlo ni descartarlo.'
+            # Sin firmas no hay nada que buscar: no es sospecha ni descarte, es falta de cobertura.
+            $status = 'NOT COVERED'
+            $just = 'No hay indicadores verificables para este cliente: el escaneo de archivos no puede confirmarlo ni descartarlo.'
         } else {
             $just = "No se encontraron indicadores de $($c.Name) dentro del alcance analizado ($scanned archivo(s) escaneados en $($Context.Instances.Count) instancia(s))."
             if ($noAccess.Count) { $just += ' Módulos sin acceso: ' + ($noAccess -join ', ') + '.' }
+        }
+        # Una coincidencia solo de nombre ("wurst-rezepte.exe") no prueba nada: se menciona, pero
+        # no cambia el veredicto ni el resultado global.
+        $names = @($fs | Where-Object Category -EQ 'KeywordName')
+        if ($names.Count -and $status -in @('NOT DETECTED', 'NOT COVERED')) {
+            $just += ' Hay ' + $names.Count + ' coincidencia(s) solo de nombre, que no cuentan como indicio (' + (@($names | Select-Object -First 2 | ForEach-Object { [IO.Path]::GetFileName([string]$_.Path) }) -join '; ') + ').'
         }
         $verdicts.Add([pscustomobject]@{
                 ClientId = $c.Id; Client = $c.Name; Category = $c.Category; Status = $status; Justification = $just
@@ -266,12 +275,19 @@ function Invoke-AmonCorrelation {
     if ($dual.Count) { $lines.Add('Herramientas de uso dual presentes (muchos servidores las permiten): ' + (($dual | ForEach-Object Client) -join ', ') + '.') }
     if ($noAccess.Count) { $lines.Add('Módulos sin acceso: ' + ($noAccess -join ', ') + '. Ejecutar como administrador amplía el análisis.') }
     $nosig = @($clients | Where-Object { $_.Indicators.Count -eq 0 } | ForEach-Object Name)
-    if ($nosig.Count) { $lines.Add('Sin firmas verificables (no se pueden descartar con archivos): ' + ($nosig -join ', ') + '.') }
+    if ($nosig.Count) { $lines.Add('Cobertura: ' + $nosig.Count + ' cliente(s) sin firmas verificables, que el escaneo de archivos no puede comprobar (' + ($nosig -join ', ') + ').') }
     $lines.Add('Conclusión para revisión humana: Amon SS no emite veredictos ni sanciones automáticas.')
     $conclusion = $lines -join ' '
 
+    # Resumen de una palabra para el revisor (no es una sanción): indicadores firmes de clientes
+    # o de otros hechos, solo indicios débiles, o nada.
+    $outcome = if ($cc.Count -or $dd.Count -or $other.Count) { 'INDICADORES ENCONTRADOS' }
+    elseif ($ii.Count -or @($all | Where-Object { $_.Status -eq 'INCONCLUSIVE' -and $_.Category -ne 'KeywordName' }).Count) { 'REVISAR A MANO' }
+    else { 'SIN INDICADORES' }
+
     $res.Data['ClientVerdicts'] = $verdicts
     $res.Data['Conclusion'] = $conclusion
+    $res.Data['Outcome'] = $outcome
     $res.ArtifactsReviewed = $all.Count
     $res = Complete-AmonModuleResult -Result $res
     $Context.Results['Correlation'] = $res
@@ -280,12 +296,14 @@ function Invoke-AmonCorrelation {
         ClientVerdicts = $verdicts
         Correlated = @($res.Findings)
         Conclusion = $conclusion
+        Outcome = $outcome
         Result = $res
         Summary = [pscustomobject]@{
             Correlated = @($verdicts | Where-Object Status -EQ 'CORRELATED').Count
             Detected = @($verdicts | Where-Object Status -EQ 'DETECTED').Count
             Inconclusive = @($verdicts | Where-Object Status -EQ 'INCONCLUSIVE').Count
             NotDetected = @($verdicts | Where-Object Status -EQ 'NOT DETECTED').Count
+            NotCovered = @($verdicts | Where-Object Status -EQ 'NOT COVERED').Count
             Findings = $all.Count
         }
     }
