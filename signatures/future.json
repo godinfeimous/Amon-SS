@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "future",
+  "name": "Future Client",
+  "category": "cheat-client",
+  "description": "Cliente cerrado. Sin fuente primaria accesible; solo un indicador secundario débil.",
+  "openSource": false,
+  "loaders": ["forge-1.12.2 (secundario)"],
+  "references": [],
+  "keywords": ["futureclient"],
+  "falsePositives": ["Una carpeta 'Future' en el perfil del usuario es un nombre genérico."],
+  "notes": "La web oficial está tras un desafío de Cloudflare que no se eludió. La fuente secundaria describe una distribución no oficial.",
+  "indicators": [
+    { "id": "future.authkey", "type": "config", "value": "Future/auth_key", "relativeTo": "userHome", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://www.mc-mod.net/?p=460743 (texto de instalación de terceros)" }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "aristois",
+  "name": "Aristois (vía EMC Framework)",
+  "category": "framework",
+  "description": "Cliente cerrado. Los indicadores pertenecen al EMC Framework (código abierto del mismo autor); la relación con Aristois es inferida, no probada por fuente primaria.",
+  "openSource": false,
+  "loaders": ["fabric (EMC, inferido)", "forge (EMC, inferido)"],
+  "references": ["https://github.com/Moudoux/EMC", "https://github.com/Moudoux/Aristois-Installer"],
+  "keywords": ["aristois"],
+  "falsePositives": [
+    "EMC es un framework general (MIT) que otros mods pueden usar: prueba EMC, no Aristois específicamente.",
+    "Muchos repositorios 'aristois-*' no son oficiales; no se usan como fuente."
+  ],
+  "notes": "No se encontró fuente primaria del JAR de Aristois (web caída y cliente cerrado).",
+  "indicators": [
+    { "id": "emc.package", "type": "package", "value": "me/deftware/client/framework/", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/Moudoux/EMC/1.18.2/src/main/java/me/deftware/client/framework/main/bootstrap/Bootstrap.java", "note": "Primario para EMC; la relación con Aristois es inferida." },
+    { "id": "emc.modid", "type": "modid", "value": "emc", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/Moudoux/EMC/1.18.2/src/main/resources/fabric.mod.json" },
+    { "id": "emc.entrypoint", "type": "entrypoint", "value": "me.deftware.launch.EarlyRiser", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/Moudoux/EMC/1.18.2/src/main/resources/fabric.mod.json" },
+    { "id": "emc.mixins", "type": "entry", "value": "mixins.emc.json", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://api.github.com/repos/Moudoux/EMC/contents/src/main/resources?ref=1.18.2" },
+    { "id": "emc.root", "type": "path", "value": "libraries/EMC", "relativeTo": "gameDir", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/Moudoux/EMC/1.18.2/src/main/java/me/deftware/client/framework/main/bootstrap/Bootstrap.java", "note": "EMC_ROOT = gameDir/libraries/EMC/<versión>/" },
+    { "id": "emc.log", "type": "log", "value": "Loading EMC v\\d+\\.\\d+", "match": "regex", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/Moudoux/EMC/1.18.2/src/main/java/me/deftware/client/framework/main/bootstrap/Bootstrap.java" }
+  ]
+}

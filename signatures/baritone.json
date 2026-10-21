@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "baritone",
+  "name": "Baritone",
+  "category": "dual-use",
+  "description": "Automatización de movimiento y minería de código abierto. Muchos servidores la permiten: no constituye por sí sola un veredicto de cliente de trampas.",
+  "openSource": true,
+  "loaders": ["fabric", "forge", "neoforge", "launchwrapper"],
+  "references": ["https://github.com/cabaletta/baritone"],
+  "keywords": ["baritone"],
+  "falsePositives": [
+    "Uso dual: muchos servidores la permiten.",
+    "Otros clientes la integran (Meteor incluye meteor-client-baritone.mixins.json, Lambda la recomienda, el instalador de Impact añade cabaletta:baritone-api)."
+  ],
+  "notes": "Forge y NeoForge usan modId 'baritoe' (sic). Los mensajes de chat llevan el prefijo [Baritone].",
+  "indicators": [
+    { "id": "baritone.package", "type": "package", "value": "baritone/api/", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/cabaletta/baritone/1.21.4/src/api/java/baritone/api/utils/SettingsUtil.java" },
+    { "id": "baritone.modid", "type": "modid", "value": "baritone", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/cabaletta/baritone/1.21.4/fabric/src/main/resources/fabric.mod.json" },
+    { "id": "baritone.modid-forge", "type": "modid", "value": "baritoe", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/cabaletta/baritone/1.21.4/forge/src/main/resources/META-INF/mods.toml" },
+    { "id": "baritone.mixins", "type": "entry", "value": "mixins.baritone.json", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/cabaletta/baritone/1.21.4/src/launch/resources/mixins.baritone.json" },
+    { "id": "baritone.settings", "type": "config", "value": "baritone/settings.txt", "relativeTo": "gameDir", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/cabaletta/baritone/1.21.4/src/api/java/baritone/api/utils/SettingsUtil.java" }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "prestige",
+  "name": "Prestige Client",
+  "category": "cheat-client",
+  "description": "Cliente cerrado e inyectable para Fabric. Las cadenas provienen del usuario y no se han validado con muestras autorizadas.",
+  "openSource": false,
+  "loaders": ["Fabric 1.21 a 26.1.2 (inyectable) según su web oficial"],
+  "references": ["https://prestigeclient.vip/"],
+  "keywords": ["zprestige", "prestigeclient"],
+  "falsePositives": [
+    "La palabra 'prestige' es común; la cadena 'zprestige' sola es un indicador débil.",
+    "Una coincidencia de cadena no demuestra que el cliente se haya ejecutado."
+  ],
+  "notes": "La web oficial lo describe como inyectable y de pocos cientos de KB, compatible con Fabric, Lunar y otros launchers: puede no dejar nada en la carpeta mods. No se encontró indicador con fuente primaria (investigación del 2026-10-20).",
+  "indicators": [
+    { "id": "prestige.entry-raw", "type": "string", "value": "dev/zprestige/prestige/api/mixin/MixinLightmapTextureManager.classPK", "strength": "medium", "provenance": "user-provided", "validated": false, "source": "Proporcionada por el usuario; pendiente de validar con muestras autorizadas", "note": "Incluye 'PK' (inicio de la siguiente cabecera ZIP): se busca en los bytes en bruto del archivo.", "encodings": ["ascii"], "scopes": ["raw", "entries"] },
+    { "id": "prestige.str.1", "type": "string", "value": "8}u6tWfJy\\", "strength": "medium", "provenance": "user-provided", "validated": false, "source": "Proporcionada por el usuario; pendiente de validar con muestras autorizadas", "note": "La barra invertida final es literal.", "encodings": ["ascii"], "scopes": ["raw", "entries"] },
+    { "id": "prestige.str.zprestige", "type": "string", "value": "zprestige", "strength": "weak", "provenance": "user-provided", "validated": false, "source": "Proporcionada por el usuario; pendiente de validar con muestras autorizadas", "note": "Subcadena de prestige.entry-raw.", "encodings": ["ascii"], "scopes": ["raw", "entries"] }
+  ]
+}

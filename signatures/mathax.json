@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "mathax",
+  "name": "MatHax (Legacy)",
+  "category": "cheat-client",
+  "description": "Fork de Meteor Client. Indicadores tomados de una copia no oficial del código.",
+  "openSource": true,
+  "loaders": ["fabric"],
+  "references": ["https://github.com/LordDoom-eng/MatHax-Client-Legacy"],
+  "keywords": ["mathax"],
+  "falsePositives": ["Al ser un fork de Meteor, la estructura se parece; el paquete raíz es distinto."],
+  "notes": "La organización oficial no tiene repositorios públicos; todo es secundario. El paquete del MatHax no-Legacy no se verificó.",
+  "indicators": [
+    { "id": "mathax.package", "type": "package", "value": "mathax/legacy/client/", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/LordDoom-eng/MatHax-Client-Legacy/master/src/main/java/mathax/legacy/client/MatHaxLegacy.java" },
+    { "id": "mathax.modid", "type": "modid", "value": "mathaxlegacy", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/LordDoom-eng/MatHax-Client-Legacy/master/src/main/resources/fabric.mod.json" },
+    { "id": "mathax.mixins", "type": "entry", "value": "mathaxlegacy.mixins.json", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://api.github.com/repos/LordDoom-eng/MatHax-Client-Legacy/contents/src/main/resources" },
+    { "id": "mathax.config", "type": "config", "value": "MatHax/Legacy", "relativeTo": "gameDir", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/LordDoom-eng/MatHax-Client-Legacy/master/src/main/java/mathax/legacy/client/MatHaxLegacy.java" },
+    { "id": "mathax.log", "type": "log", "value": "[MatHax Legacy] Initializing MatHax Legacy", "match": "literal", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/LordDoom-eng/MatHax-Client-Legacy/master/src/main/java/mathax/legacy/client/MatHaxLegacy.java" }
+  ]
+}

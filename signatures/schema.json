@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/amon-ss/Amon-SS/signatures/schema.json",
+  "title": "Amon SS - definición de firmas de un cliente",
+  "description": "Un archivo puede contener una definición (objeto) o varias ({\"clients\": [...]}). Cada indicador debe citar su fuente. Ver docs/SIGNATURES.md.",
+  "definitions": {
+    "indicator": {
+      "type": "object",
+      "required": ["id", "type", "value", "strength", "provenance", "validated", "source"],
+      "properties": {
+        "id": { "type": "string", "description": "Identificador único dentro del cliente." },
+        "type": {
+          "enum": ["package", "entry", "entrypoint", "manifest", "modid", "config", "path", "log", "string", "hex", "sha256", "versionId", "jvmArg"],
+          "description": "package: prefijo de entrada ZIP; entry: nombre de entrada (ruta completa o nombre de archivo); entrypoint: clase Java (puntos); manifest: 'Clave: Valor'; modid: id declarado en metadatos o cargado según logs; config/path: ruta relativa a gameDir o userHome; log: texto en logs de Minecraft; string: bytes literales; hex: bytes en hexadecimal; sha256: hash de archivo; versionId: regex sobre ids de versions/; jvmArg: subcadena de argumentos JVM."
+        },
+        "value": { "type": "string", "minLength": 1 },
+        "strength": { "enum": ["strong", "medium", "weak"] },
+        "provenance": { "enum": ["primary-source", "secondary", "user-provided", "sample-verified"] },
+        "validated": { "type": "boolean", "description": "true solo si procede de código fuente/documentación oficial o se comprobó con muestras autorizadas." },
+        "source": { "type": "string", "minLength": 1 },
+        "note": { "type": "string" },
+        "group": { "type": "string", "description": "Variante del cliente (p. ej. legacy / current)." },
+        "match": { "enum": ["literal", "regex"], "default": "literal" },
+        "encodings": { "type": "array", "items": { "enum": ["ascii", "utf8", "utf16le"] } },
+        "scopes": { "type": "array", "items": { "enum": ["raw", "entries"] } },
+        "relativeTo": { "enum": ["gameDir", "userHome"] }
+      }
+    }
+  },
+  "type": "object",
+  "required": ["schemaVersion", "id", "name", "category", "indicators"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9\\-]*$" },
+    "name": { "type": "string" },
+    "category": { "enum": ["cheat-client", "dual-use", "framework"] },
+    "description": { "type": "string" },
+    "openSource": { "type": "boolean" },
+    "loaders": { "type": "array", "items": { "type": "string" } },
+    "references": { "type": "array", "items": { "type": "string" } },
+    "keywords": { "type": "array", "items": { "type": "string" }, "description": "Palabras distintivas para filtrar artefactos de otros módulos. Una coincidencia de nombre es solo heurística." },
+    "falsePositives": { "type": "array", "items": { "type": "string" } },
+    "notes": { "type": "string" },
+    "indicators": { "type": "array", "items": { "$ref": "#/definitions/indicator" } }
+  }
+}

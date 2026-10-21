@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "salhack",
+  "name": "SalHack",
+  "category": "cheat-client",
+  "description": "Cliente de código abierto para Forge 1.12.2 (descontinuado).",
+  "openSource": true,
+  "loaders": ["forge-1.12.2"],
+  "references": ["https://github.com/ionar2/spidermod"],
+  "keywords": ["salhack"],
+  "falsePositives": ["Incluye paquetes de terceros legítimos (com/github/lunatrius/ de Schematica, com/tterrag/blur/): no se marcan."],
+  "notes": "",
+  "indicators": [
+    { "id": "sal.package", "type": "package", "value": "me/ionar/salhack/", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/ionar2/spidermod/master/src/main/java/me/ionar/salhack/SalHackMod.java" },
+    { "id": "sal.modid", "type": "modid", "value": "salhack", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/ionar2/spidermod/master/src/main/resources/mcmod.info" },
+    { "id": "sal.mixins", "type": "entry", "value": "mixins.salhack.json", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/ionar2/spidermod/master/src/main/resources/mixins.salhack.json" },
+    { "id": "sal.refmap", "type": "entry", "value": "mixins.salhack.refmap.json", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/ionar2/spidermod/master/src/main/resources/mixins.salhack.json" },
+    { "id": "sal.at", "type": "entry", "value": "salhack_at.cfg", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/ionar2/spidermod/master/build.gradle" },
+    { "id": "sal.coreplugin", "type": "manifest", "value": "FMLCorePlugin: me.ionar.salhack.mixin.MixinLoaderForge", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/ionar2/spidermod/master/build.gradle" },
+    { "id": "sal.config", "type": "config", "value": "SalHack", "relativeTo": "gameDir", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/ionar2/spidermod/master/src/main/java/me/ionar/salhack/managers/DirectoryManager.java" },
+    { "id": "sal.log.init", "type": "log", "value": "init salhack v: ", "match": "literal", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/ionar2/spidermod/master/src/main/java/me/ionar/salhack/SalHackMod.java" }
+  ]
+}

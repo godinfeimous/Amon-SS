@@ -1,0 +1,28 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Amon SS: menú interactivo",
+      "type": "PowerShell",
+      "request": "launch",
+      "script": "${workspaceFolder}/Start-AmonSS.ps1",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Amon SS: escaneo completo no interactivo (JSON + HTML)",
+      "type": "PowerShell",
+      "request": "launch",
+      "script": "${workspaceFolder}/Start-AmonSS.ps1",
+      "args": ["-Scan", "Full", "-Consent", "-ConsentNote", "'Prueba desde VS Code'", "-Report", "json,html"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Pruebas Pester (unitarias + integración)",
+      "type": "PowerShell",
+      "request": "launch",
+      "script": "${workspaceFolder}/tests/Invoke-AmonTests.ps1",
+      "args": ["-Integration"],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

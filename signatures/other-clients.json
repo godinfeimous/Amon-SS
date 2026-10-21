@@ -1,0 +1,91 @@
+{
+  "clients": [
+    {
+      "schemaVersion": 1,
+      "id": "vape",
+      "name": "Vape (v4 / Lite)",
+      "category": "cheat-client",
+      "description": "Cliente cerrado e inyectable.",
+      "openSource": false,
+      "loaders": ["inyectable (según su web)"],
+      "references": ["https://vape.gg/"],
+      "keywords": ["vape"],
+      "falsePositives": [],
+      "notes": "Sin indicadores verificables: la web oficial solo indica que es inyectable y las descargas requieren cuenta. Las firmas que circulan en foros no se incluyen por no poder verificarse. El escaneo de archivos no puede descartarlo.",
+      "indicators": []
+    },
+    {
+      "schemaVersion": 1,
+      "id": "raven",
+      "name": "Raven (B+, BS, XD y forks)",
+      "category": "cheat-client",
+      "description": "Clientes para Forge 1.8.9 cuyo código fue abierto.",
+      "openSource": true,
+      "loaders": ["forge-1.8.9"],
+      "references": [],
+      "keywords": [],
+      "falsePositives": [],
+      "notes": "Sin indicadores verificables: todos los repositorios conocidos están bloqueados en GitHub (HTTP 451) y no había copia primaria accesible el 2026-10-20. Los nombres de paquete citados habitualmente no se incluyen por no poder verificarse.",
+      "indicators": []
+    },
+    {
+      "schemaVersion": 1,
+      "id": "inertia",
+      "name": "Inertia Client",
+      "category": "cheat-client",
+      "description": "Cliente cerrado.",
+      "openSource": false,
+      "loaders": [],
+      "references": [],
+      "keywords": [],
+      "falsePositives": [
+        "El mod 'Inertia!' de Modrinth (cámara) y 'Inertia Anti Cheat' (servidor) no tienen relación.",
+        "Repositorios Minecraft-Inertia/* parecen spam o distribución de malware; no son fuente."
+      ],
+      "notes": "Sin indicadores verificables: no se localizó repositorio ni documentación oficial.",
+      "indicators": []
+    },
+    {
+      "schemaVersion": 1,
+      "id": "sigma",
+      "name": "Sigma (Sigma 5 / Jello)",
+      "category": "cheat-client",
+      "description": "Cliente cerrado.",
+      "openSource": false,
+      "loaders": [],
+      "references": [],
+      "keywords": [],
+      "falsePositives": [],
+      "notes": "Sin indicadores verificables: la web oficial no respondió y no hay fuente primaria.",
+      "indicators": []
+    },
+    {
+      "schemaVersion": 1,
+      "id": "rise",
+      "name": "Rise (Rise 6)",
+      "category": "cheat-client",
+      "description": "Cliente cerrado para 1.8.9, 1.12.2 y 1.19.4 según su web.",
+      "openSource": false,
+      "loaders": [],
+      "references": ["https://riseclient.com/"],
+      "keywords": [],
+      "falsePositives": [],
+      "notes": "Sin indicadores verificables de archivo, paquete o log. Su documentación de scripting (JavaScript ES 5.1) no documenta rutas.",
+      "indicators": []
+    },
+    {
+      "schemaVersion": 1,
+      "id": "novoline",
+      "name": "Novoline",
+      "category": "cheat-client",
+      "description": "Cliente cerrado.",
+      "openSource": false,
+      "loaders": [],
+      "references": [],
+      "keywords": ["novoline"],
+      "falsePositives": [],
+      "notes": "Sin indicadores verificables: no se localizó fuente pública oficial.",
+      "indicators": []
+    }
+  ]
+}

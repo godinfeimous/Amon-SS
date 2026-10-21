@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "thunderhack",
+  "name": "ThunderHack Recode",
+  "category": "cheat-client",
+  "description": "Cliente de hacks de código abierto para Fabric (archivado el 2024-11-06).",
+  "openSource": true,
+  "loaders": ["fabric"],
+  "references": ["https://github.com/Pan4ur/ThunderHack-Recode"],
+  "keywords": ["thunderhack"],
+  "falsePositives": [],
+  "notes": "Su README advierte de copias renombradas con RAT (Expensive, DoxWare 2.0, Deluxe Client, Quick Client, entre otras) que pueden conservar estos indicadores.",
+  "indicators": [
+    { "id": "th.package", "type": "package", "value": "thunder/hack/", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/Pan4ur/ThunderHack-Recode/main/src/main/java/thunder/hack/ThunderHack.java" },
+    { "id": "th.modid", "type": "modid", "value": "thunderhack", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/Pan4ur/ThunderHack-Recode/main/src/main/resources/fabric.mod.json" },
+    { "id": "th.entrypoint", "type": "entrypoint", "value": "thunder.hack.ThunderHack", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/Pan4ur/ThunderHack-Recode/main/src/main/resources/fabric.mod.json" },
+    { "id": "th.mixins", "type": "entry", "value": "thunderhack.mixins.json", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/Pan4ur/ThunderHack-Recode/main/src/main/resources/fabric.mod.json" },
+    { "id": "th.accesswidener", "type": "entry", "value": "thunderhack.accesswidener", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/Pan4ur/ThunderHack-Recode/main/src/main/resources/fabric.mod.json" },
+    { "id": "th.config", "type": "config", "value": "ThunderHackRecode", "relativeTo": "gameDir", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/Pan4ur/ThunderHack-Recode/main/src/main/java/thunder/hack/core/manager/client/ConfigManager.java" },
+    { "id": "th.log.init", "type": "log", "value": "\\[ThunderHack\\] Init time: \\d+ ms\\.", "match": "regex", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/Pan4ur/ThunderHack-Recode/main/src/main/java/thunder/hack/ThunderHack.java" }
+  ]
+}

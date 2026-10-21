@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      admin:
+        description: 'Incluir pruebas que requieren administrador (Prefetch real)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Codificación y firmas
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: UTF-8 con BOM en scripts
+        shell: pwsh
+        run: ./tools/Repair-Encoding.ps1 -Check
+      - name: PSScriptAnalyzer (los errores bloquean)
+        shell: pwsh
+        run: |
+          Install-Module PSScriptAnalyzer -Scope CurrentUser -Force
+          $r = Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1
+          $r | Format-Table -AutoSize | Out-String -Width 220 | Write-Host
+          $errors = @($r | Where-Object Severity -eq 'Error')
+          if ($errors.Count) { throw "PSScriptAnalyzer: $($errors.Count) error(es)." }
+
+  tests:
+    name: Pester (${{ matrix.shell }})
+    runs-on: windows-latest
+    needs: checks
+    strategy:
+      fail-fast: false
+      matrix:
+        shell: [powershell, pwsh]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar Pester 5.7.1
+        shell: ${{ matrix.shell }}
+        run: Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Force -SkipPublisherCheck
+      - name: Pruebas unitarias e integración (solo lectura)
+        shell: ${{ matrix.shell }}
+        run: |
+          $extra = @{}
+          if ('${{ github.event.inputs.admin }}' -eq 'true') { $extra.Admin = $true }
+          ./tests/Invoke-AmonTests.ps1 -Integration @extra -OutputXml "test-results-${{ matrix.shell }}.xml"
+      - name: Resultados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.shell }}
+          path: test-results-${{ matrix.shell }}.xml

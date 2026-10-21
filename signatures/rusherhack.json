@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "rusherhack",
+  "name": "RusherHack",
+  "category": "cheat-client",
+  "description": "Cliente cerrado para Fabric con API de plugins pública.",
+  "openSource": false,
+  "loaders": ["fabric"],
+  "references": ["https://github.com/RusherDevelopment"],
+  "keywords": ["rusherhack"],
+  "falsePositives": ["Los JAR de plugins (rusherhack-plugin.json) prueban intención de usar RusherHack, pero no son el cliente."],
+  "notes": "No hay literal de log verificable. El nombre del JAR del loader en una instalación de usuario no está documentado.",
+  "indicators": [
+    { "id": "rh.api-package", "type": "package", "value": "org/rusherhack/client/api/", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/RusherDevelopment/example-plugin/master/src/main/java/org/example/ExamplePlugin.java", "note": "El cliente debe proveer este paquete; los plugins lo importan." },
+    { "id": "rh.api-reference", "type": "string", "value": "org/rusherhack/client/api/", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/RusherDevelopment/example-plugin/master/src/main/java/org/example/ExamplePlugin.java", "note": "Referencias desde plugins compilados.", "encodings": ["ascii"], "scopes": ["entries"] },
+    { "id": "rh.plugin-descriptor", "type": "entry", "value": "rusherhack-plugin.json", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/RusherDevelopment/example-plugin/master/src/main/resources/rusherhack-plugin.json" },
+    { "id": "rh.accesswidener", "type": "entry", "value": "rusherhack.accesswidener", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/RusherDevelopment/example-plugin/master/build.gradle" },
+    { "id": "rh.jvm-plugins", "type": "jvmArg", "value": "-Drusherhack.enablePlugins=true", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/RusherDevelopment/rusherhack-plugins/main/README.md" },
+    { "id": "rh.config-plugins", "type": "config", "value": "rusherhack/plugins", "relativeTo": "gameDir", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/RusherDevelopment/rusherhack-plugins/main/README.md" }
+  ]
+}

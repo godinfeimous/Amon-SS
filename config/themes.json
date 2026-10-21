@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "default": "FullPurple",
+  "themes": {
+    "FullPurple": {
+      "displayName": "Full Purple",
+      "colorMode": "TrueColor",
+      "glyphs": "auto",
+      "boxStyle": "double",
+      "gradientBanner": true,
+      "animations": true,
+      "blackBackground": true,
+      "palette": {
+        "frame": "#6D28D9",
+        "frameDim": "#3B0764",
+        "title": "#A855F7",
+        "accent": "#C084FC",
+        "secondary": "#C4B5FD",
+        "primary": "#F5F3FF",
+        "muted": "#8B7FA8",
+        "warning": "#FACC15",
+        "finding": "#F43F5E",
+        "success": "#4ADE80",
+        "shadow": "#3B0764"
+      },
+      "bannerGradient": ["#5B21B6", "#7C3AED", "#A855F7", "#D8B4FE"],
+      "consoleColors": {
+        "frame": "DarkMagenta",
+        "frameDim": "DarkMagenta",
+        "title": "Magenta",
+        "accent": "Magenta",
+        "secondary": "Gray",
+        "primary": "White",
+        "muted": "DarkGray",
+        "warning": "Yellow",
+        "finding": "Red",
+        "success": "Green",
+        "shadow": "DarkMagenta"
+      }
+    },
+    "MinimalPurple": {
+      "displayName": "Minimal Purple",
+      "colorMode": "TrueColor",
+      "glyphs": "auto",
+      "boxStyle": "single",
+      "gradientBanner": false,
+      "animations": false,
+      "blackBackground": true,
+      "palette": {
+        "frame": "#4C1D95",
+        "frameDim": "#2E1065",
+        "title": "#A78BFA",
+        "accent": "#A78BFA",
+        "secondary": "#C4B5FD",
+        "primary": "#EDE9FE",
+        "muted": "#7C7391",
+        "warning": "#EAB308",
+        "finding": "#E11D48",
+        "success": "#22C55E",
+        "shadow": "#4C1D95"
+      },
+      "bannerGradient": ["#A78BFA", "#A78BFA"],
+      "consoleColors": {
+        "frame": "DarkMagenta",
+        "frameDim": "DarkMagenta",
+        "title": "Magenta",
+        "accent": "Magenta",
+        "secondary": "Gray",
+        "primary": "White",
+        "muted": "DarkGray",
+        "warning": "Yellow",
+        "finding": "Red",
+        "success": "Green",
+        "shadow": "DarkMagenta"
+      }
+    },
+    "ClassicTerminal": {
+      "displayName": "Classic Terminal",
+      "colorMode": "Console",
+      "glyphs": "safe",
+      "boxStyle": "double",
+      "gradientBanner": false,
+      "animations": false,
+      "blackBackground": false,
+      "palette": {
+        "frame": "#800080",
+        "frameDim": "#800080",
+        "title": "#FF00FF",
+        "accent": "#FF00FF",
+        "secondary": "#C0C0C0",
+        "primary": "#FFFFFF",
+        "muted": "#808080",
+        "warning": "#FFFF00",
+        "finding": "#FF0000",
+        "success": "#00FF00",
+        "shadow": "#800080"
+      },
+      "bannerGradient": ["#FF00FF", "#FF00FF"],
+      "consoleColors": {
+        "frame": "DarkMagenta",
+        "frameDim": "DarkMagenta",
+        "title": "Magenta",
+        "accent": "Magenta",
+        "secondary": "Gray",
+        "primary": "White",
+        "muted": "DarkGray",
+        "warning": "Yellow",
+        "finding": "Red",
+        "success": "Green",
+        "shadow": "DarkMagenta"
+      }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+# Salidas de compilación y pruebas
+release/
+test-results*.xml
+*.zip
+
+# Reportes generados durante el desarrollo (contienen datos del equipo analizado)
+reports/
+AMON-*.json
+AMON-*.txt
+AMON-*.html
+AMON-*.sha256
+
+# Editor / sistema
+.vs/
+*.user
+Thumbs.db
+desktop.ini

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "liquidbounce",
+  "name": "LiquidBounce",
+  "category": "cheat-client",
+  "description": "Cliente de hacks de código abierto de CCBlueX. Variantes: nextgen (Fabric) y legacy (Forge 1.8.9, descontinuado).",
+  "openSource": true,
+  "loaders": ["fabric", "forge-1.8.9"],
+  "references": ["https://github.com/CCBlueX/LiquidBounce"],
+  "keywords": ["liquidbounce", "ccbluex"],
+  "falsePositives": [
+    "Existen muchas copias renombradas (skids) que conservan el paquete: una coincidencia significa 'este código o un derivado'.",
+    "Líneas de log genéricas como 'Initializing API...' no se usan por ser poco específicas."
+  ],
+  "notes": "Solo se verificó el estado final de cada rama; builds legacy antiguas podían usar otros nombres de carpeta.",
+  "indicators": [
+    { "id": "lb.package", "type": "package", "value": "net/ccbluex/liquidbounce/", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/CCBlueX/LiquidBounce/nextgen/src/main/kotlin/net/ccbluex/liquidbounce/LiquidBounce.kt", "note": "Mismo paquete raíz en nextgen y legacy." },
+    { "id": "lb.modid", "type": "modid", "value": "liquidbounce", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/CCBlueX/LiquidBounce/nextgen/src/main/resources/fabric.mod.json", "note": "También en el mcmod.info de legacy." },
+    { "id": "lb.nextgen.mixins", "type": "entry", "value": "liquidbounce.mixins.json", "group": "nextgen", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/CCBlueX/LiquidBounce/nextgen/src/main/resources/fabric.mod.json" },
+    { "id": "lb.nextgen.accesswidener", "type": "entry", "value": "liquidbounce.accesswidener", "group": "nextgen", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/CCBlueX/LiquidBounce/nextgen/src/main/resources/fabric.mod.json" },
+    { "id": "lb.nextgen.config", "type": "config", "value": "LiquidBounce", "group": "nextgen", "relativeTo": "gameDir", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/CCBlueX/LiquidBounce/nextgen/src/main/kotlin/net/ccbluex/liquidbounce/config/ConfigSystem.kt" },
+    { "id": "lb.nextgen.log.launch", "type": "log", "value": "Launching LiquidBounce v\\S+ by CCBlueX", "match": "regex", "group": "nextgen", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/CCBlueX/LiquidBounce/nextgen/src/main/kotlin/net/ccbluex/liquidbounce/LiquidBounce.kt", "note": "Plantilla 'Launching $CLIENT_NAME v$clientVersion by $CLIENT_AUTHOR'." },
+    { "id": "lb.nextgen.log.ready", "type": "log", "value": "LiquidBounce has been successfully initialized.", "match": "literal", "group": "nextgen", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/CCBlueX/LiquidBounce/nextgen/src/main/kotlin/net/ccbluex/liquidbounce/LiquidBounce.kt" },
+    { "id": "lb.legacy.mixins", "type": "entry", "value": "liquidbounce.forge.mixins.json", "group": "legacy", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/CCBlueX/LiquidBounce/legacy/src/main/resources/liquidbounce.forge.mixins.json" },
+    { "id": "lb.legacy.refmap", "type": "entry", "value": "liquidbounce.mixins.refmap.json", "group": "legacy", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/CCBlueX/LiquidBounce/legacy/build.gradle" },
+    { "id": "lb.legacy.at", "type": "entry", "value": "META-INF/liquidbounce_at.cfg", "group": "legacy", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/CCBlueX/LiquidBounce/legacy/build.gradle" },
+    { "id": "lb.legacy.coreplugin", "type": "manifest", "value": "FMLCorePlugin: net.ccbluex.liquidbounce.injection.forge.MixinLoader", "group": "legacy", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/CCBlueX/LiquidBounce/legacy/build.gradle" },
+    { "id": "lb.legacy.mainclass", "type": "manifest", "value": "Main-Class: net.ccbluex.liquidinstruction.LiquidInstructionKt", "group": "legacy", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/CCBlueX/LiquidBounce/legacy/build.gradle" },
+    { "id": "lb.legacy.config", "type": "config", "value": "LiquidBounce-1.8.9", "group": "legacy", "relativeTo": "gameDir", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/CCBlueX/LiquidBounce/legacy/src/main/java/net/ccbluex/liquidbounce/file/FileManager.kt" },
+    { "id": "lb.legacy.log.start", "type": "log", "value": "Starting LiquidBounce .+, by CCBlueX", "match": "regex", "group": "legacy", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/CCBlueX/LiquidBounce/legacy/src/main/java/net/ccbluex/liquidbounce/LiquidBounce.kt" },
+    { "id": "lb.legacy.log.preload", "type": "log", "value": "Starting preload tasks of LiquidBounce", "match": "literal", "group": "legacy", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/CCBlueX/LiquidBounce/legacy/src/main/java/net/ccbluex/liquidbounce/LiquidBounce.kt" }
+  ]
+}

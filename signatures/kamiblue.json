@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "kamiblue",
+  "name": "KAMI Blue",
+  "category": "cheat-client",
+  "description": "Cliente de código abierto para Forge 1.12.2 (archivado el 2021-04-22).",
+  "openSource": true,
+  "loaders": ["forge-1.12.2"],
+  "references": ["https://github.com/kami-blue/client"],
+  "keywords": ["kamiblue", "kami blue"],
+  "falsePositives": [],
+  "notes": "Lambda legacy es su sucesor, con estructura casi idéntica y nombres distintos.",
+  "indicators": [
+    { "id": "kami.package", "type": "package", "value": "org/kamiblue/client/", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/kami-blue/client/master/src/main/kotlin/org/kamiblue/client/KamiMod.kt" },
+    { "id": "kami.modid", "type": "modid", "value": "kamiblue", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/kami-blue/client/master/src/main/resources/mcmod.info" },
+    { "id": "kami.mixins", "type": "entry", "value": "mixins.kami.json", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/kami-blue/client/master/src/main/resources/mixins.kami.json" },
+    { "id": "kami.refmap", "type": "entry", "value": "mixins.kami.refmap.json", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/kami-blue/client/master/src/main/resources/mixins.kami.json" },
+    { "id": "kami.coreplugin", "type": "manifest", "value": "FMLCorePlugin: org.kamiblue.client.mixin.MixinLoaderForge", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/kami-blue/client/master/build.gradle" },
+    { "id": "kami.installer", "type": "manifest", "value": "Main-Class: org.kamiblue.client.installer.Installer", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/kami-blue/client/master/build.gradle" },
+    { "id": "kami.config", "type": "config", "value": "kamiblue", "relativeTo": "gameDir", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/kami-blue/client/master/src/main/kotlin/org/kamiblue/client/KamiMod.kt" },
+    { "id": "kami.log.init", "type": "log", "value": "Initializing KAMI Blue \\S+", "match": "regex", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/kami-blue/client/master/src/main/kotlin/org/kamiblue/client/KamiMod.kt" },
+    { "id": "kami.log.done", "type": "log", "value": "KAMI Blue initialized!", "match": "literal", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/kami-blue/client/master/src/main/kotlin/org/kamiblue/client/KamiMod.kt" }
+  ]
+}

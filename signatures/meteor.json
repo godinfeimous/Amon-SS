@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "meteor-client",
+  "name": "Meteor Client",
+  "category": "cheat-client",
+  "description": "Cliente de utilidades/hacks de código abierto para Fabric.",
+  "openSource": true,
+  "loaders": ["fabric"],
+  "references": ["https://github.com/MeteorDevelopment/meteor-client"],
+  "keywords": ["meteor-client", "meteorclient", "meteordevelopment"],
+  "falsePositives": [
+    "Los addons de Meteor importan clases meteordevelopment.meteorclient: coinciden por cadena aunque no contengan el paquete. Igualmente implican que Meteor está instalado.",
+    "La carpeta meteor-client sobrevive a la desinstalación."
+  ],
+  "notes": "La lista 'breaks' de su fabric.mod.json incluye optifabric, feather, origins y morechathistory.",
+  "indicators": [
+    { "id": "meteor.package", "type": "package", "value": "meteordevelopment/meteorclient/", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/MeteorDevelopment/meteor-client/master/src/main/java/meteordevelopment/meteorclient/MeteorClient.java", "note": "package meteordevelopment.meteorclient; (v0.4.5 y posteriores)" },
+    { "id": "meteor.package-legacy", "type": "package", "value": "minegame159/meteorclient/", "group": "legacy", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/MeteorDevelopment/meteor-client/v0.4.4/src/main/resources/fabric.mod.json", "note": "Paquete raíz de v0.4.0 a v0.4.4." },
+    { "id": "meteor.modid", "type": "modid", "value": "meteor-client", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/MeteorDevelopment/meteor-client/master/src/main/resources/fabric.mod.json" },
+    { "id": "meteor.entrypoint", "type": "entrypoint", "value": "meteordevelopment.meteorclient.MeteorClient", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/MeteorDevelopment/meteor-client/master/src/main/resources/fabric.mod.json" },
+    { "id": "meteor.mixins", "type": "entry", "value": "meteor-client.mixins.json", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/MeteorDevelopment/meteor-client/master/src/main/resources/fabric.mod.json" },
+    { "id": "meteor.mixins-baritone", "type": "entry", "value": "meteor-client-baritone.mixins.json", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/MeteorDevelopment/meteor-client/master/src/main/resources/fabric.mod.json" },
+    { "id": "meteor.mixins-indigo", "type": "entry", "value": "meteor-client-indigo.mixins.json", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/MeteorDevelopment/meteor-client/master/src/main/resources/fabric.mod.json" },
+    { "id": "meteor.mixins-sodium", "type": "entry", "value": "meteor-client-sodium.mixins.json", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/MeteorDevelopment/meteor-client/master/src/main/resources/fabric.mod.json" },
+    { "id": "meteor.mixins-lithium", "type": "entry", "value": "meteor-client-lithium.mixins.json", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/MeteorDevelopment/meteor-client/master/src/main/resources/fabric.mod.json" },
+    { "id": "meteor.mixins-viafabricplus", "type": "entry", "value": "meteor-client-viafabricplus.mixins.json", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/MeteorDevelopment/meteor-client/v0.5.8/src/main/resources/fabric.mod.json", "note": "Presente en v0.5.8." },
+    { "id": "meteor.classtweaker", "type": "entry", "value": "meteor-client.classtweaker", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/MeteorDevelopment/meteor-client/master/src/main/resources/fabric.mod.json" },
+    { "id": "meteor.accesswidener", "type": "entry", "value": "meteor-client.accesswidener", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/MeteorDevelopment/meteor-client/v0.5.8/src/main/resources/fabric.mod.json" },
+    { "id": "meteor.reference", "type": "string", "value": "meteordevelopment/meteorclient/", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/MeteorDevelopment/meteor-client/master/src/main/java/meteordevelopment/meteorclient/MeteorClient.java", "note": "Referencia a clases de Meteor dentro de clases compiladas (addons).", "encodings": ["ascii"], "scopes": ["entries"] },
+    { "id": "meteor.config", "type": "config", "value": "meteor-client", "relativeTo": "gameDir", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/MeteorDevelopment/meteor-client/master/src/main/java/meteordevelopment/meteorclient/MeteorClient.java", "note": "FOLDER = gameDir.resolve(MOD_ID)" },
+    { "id": "meteor.log.init", "type": "log", "value": "Initializing Meteor Client", "match": "literal", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/MeteorDevelopment/meteor-client/master/src/main/java/meteordevelopment/meteorclient/MeteorClient.java", "note": "LOG.info(\"Initializing {}\", NAME) con NAME = 'Meteor Client'." }
+  ]
+}

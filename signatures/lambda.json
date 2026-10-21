@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "lambda",
+  "name": "Lambda",
+  "category": "cheat-client",
+  "description": "Cliente de código abierto: reescritura Fabric 1.21.x y legacy Forge 1.12.2 (archivado).",
+  "openSource": true,
+  "loaders": ["fabric", "forge-1.12.2"],
+  "references": ["https://github.com/lambda-client/lambda", "https://github.com/lambda-client/lambda-legacy"],
+  "keywords": ["lambda-client"],
+  "falsePositives": ["La carpeta 'lambda' y el id 'lambda' son genéricos: exigir coincidencia en el JAR o los subdirectorios específicos."],
+  "notes": "La reescritura Fabric recomienda Baritone. Lambda legacy deriva de KAMI Blue.",
+  "indicators": [
+    { "id": "lambda.package", "type": "package", "value": "com/lambda/", "group": "fabric", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/lambda-client/lambda/1.21.11/src/main/kotlin/com/lambda/Lambda.kt" },
+    { "id": "lambda.package-legacy", "type": "package", "value": "com/lambda/client/", "group": "legacy", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/lambda-client/lambda-legacy/master/src/main/kotlin/com/lambda/client/LambdaMod.kt" },
+    { "id": "lambda.modid", "type": "modid", "value": "lambda", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/lambda-client/lambda/1.21.11/gradle.properties", "note": "Id genérico; por eso fuerza media." },
+    { "id": "lambda.entrypoint", "type": "entrypoint", "value": "com.lambda.Lambda", "group": "fabric", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/lambda-client/lambda/1.21.11/src/main/resources/fabric.mod.json" },
+    { "id": "lambda.mixins", "type": "entry", "value": "lambda.mixins.json", "group": "fabric", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/lambda-client/lambda/1.21.11/src/main/resources/lambda.mixins.json" },
+    { "id": "lambda.accesswidener", "type": "entry", "value": "lambda.accesswidener", "group": "fabric", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/lambda-client/lambda/1.21.11/src/main/resources/lambda.mixins.json" },
+    { "id": "lambda.mixins-legacy", "type": "entry", "value": "mixins.lambda.json", "group": "legacy", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/lambda-client/lambda-legacy/master/src/main/resources/mixins.lambda.json" },
+    { "id": "lambda.coreplugin", "type": "manifest", "value": "FMLCorePlugin: com.lambda.client.LambdaCoreMod", "group": "legacy", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/lambda-client/lambda-legacy/master/build.gradle" },
+    { "id": "lambda.config", "type": "config", "value": "lambda", "relativeTo": "gameDir", "strength": "weak", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/lambda-client/lambda/1.21.11/src/main/kotlin/com/lambda/util/FolderRegistry.kt" },
+    { "id": "lambda.log.initialized", "type": "log", "value": "Lambda \\S+ initialized in \\d+ ms", "match": "regex", "group": "fabric", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/lambda-client/lambda/1.21.11/src/main/kotlin/com/lambda/Lambda.kt" },
+    { "id": "lambda.log.legacy", "type": "log", "value": "Lambda initialized!", "match": "literal", "group": "legacy", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/lambda-client/lambda-legacy/master/src/main/kotlin/com/lambda/client/LambdaMod.kt" }
+  ]
+}

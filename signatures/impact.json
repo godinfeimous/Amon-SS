@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "impact",
+  "name": "Impact",
+  "category": "cheat-client",
+  "description": "Cliente cerrado; los indicadores provienen de su instalador oficial de código abierto.",
+  "openSource": false,
+  "loaders": ["vanilla launchwrapper (tweaker)", "forge", "multimc"],
+  "references": ["https://github.com/ImpactDevelopment/Installer"],
+  "keywords": ["impactclient", "impactdevelopment"],
+  "falsePositives": ["Las entradas de la librería Baritone por sí solas no implican Impact."],
+  "notes": "El instalador también crea un perfil 'Impact <versión> for <mc>' en launcher_profiles.json. Su mainClass (net.minecraft.launchwrapper.Launch) es genérica.",
+  "indicators": [
+    { "id": "impact.version-id", "type": "versionId", "value": "^.+-Impact_.+$", "match": "regex", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/ImpactDevelopment/Installer/master/src/main/java/io/github/ImpactDevelopment/installer/target/targets/Vanilla.java", "note": "Ejemplo: 1.12.2-Impact_4.9 (con sufijo -OptiFine_<v> opcional)." },
+    { "id": "impact.library", "type": "path", "value": "libraries/com/github/ImpactDevelopment/Impact", "relativeTo": "gameDir", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/ImpactDevelopment/Installer/master/src/main/java/io/github/ImpactDevelopment/installer/impact/ImpactVersion.java" },
+    { "id": "impact.clientapi", "type": "package", "value": "clientapi/", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/ImpactDevelopment/ClientAPI/1.12.2/README.md", "note": "ClientAPI de ImpactDevelopment; no está probado qué builds de Impact la incluyen." }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "nova-client",
+  "name": "Nova Client",
+  "category": "cheat-client",
+  "description": "Cliente cerrado. Las cadenas provienen del usuario y no se han validado con muestras autorizadas.",
+  "openSource": false,
+  "loaders": [],
+  "references": [],
+  "keywords": ["novaclient"],
+  "falsePositives": [
+    "Cadenas Base64 de palabras comunes ('Self Destruct', 'NoBreakDelay') pueden aparecer en otros mods de utilidades.",
+    "Una coincidencia de cadena no demuestra que el cliente se haya ejecutado."
+  ],
+  "notes": "Por política del proyecto no se visita ninguna URL contenida en estas cadenas ni el dominio del cliente. No se encontró indicador con fuente primaria (investigación del 2026-10-20).",
+  "indicators": [
+    { "id": "nova.b64.selfdestruct", "type": "string", "value": "U2VsZiBEZXN0cnVjdA==", "strength": "medium", "provenance": "user-provided", "validated": false, "source": "Proporcionada por el usuario; pendiente de validar con muestras autorizadas", "note": "Base64 del texto 'Self Destruct'.", "encodings": ["ascii"], "scopes": ["raw", "entries"] },
+    { "id": "nova.b64.url", "type": "string", "value": "aHR0cDovL2FwaS5ub3ZhY2xpZW50LmxvbC93ZWJob29rLnR4dA==", "strength": "medium", "provenance": "user-provided", "validated": false, "source": "Proporcionada por el usuario; pendiente de validar con muestras autorizadas", "note": "Base64 de una URL. No se visita ni se resuelve por política.", "encodings": ["ascii"], "scopes": ["raw", "entries"] },
+    { "id": "nova.b64.nobreakdelay", "type": "string", "value": "Tm9CcmVha0RlbGF5", "strength": "medium", "provenance": "user-provided", "validated": false, "source": "Proporcionada por el usuario; pendiente de validar con muestras autorizadas", "note": "Base64 del texto 'NoBreakDelay'.", "encodings": ["ascii"], "scopes": ["raw", "entries"] },
+    { "id": "nova.str.1", "type": "string", "value": "UJHfsGGjbPfVZ", "strength": "medium", "provenance": "user-provided", "validated": false, "source": "Proporcionada por el usuario; pendiente de validar con muestras autorizadas", "encodings": ["ascii"], "scopes": ["raw", "entries"] },
+    { "id": "nova.b64.selfdestruct-nopad", "type": "string", "value": "U2VsZiBEZXN0cnVjdA", "strength": "medium", "provenance": "user-provided", "validated": false, "source": "Proporcionada por el usuario; pendiente de validar con muestras autorizadas", "note": "Variante sin relleno de nova.b64.selfdestruct; no cuenta como indicador independiente si ambas coinciden.", "encodings": ["ascii"], "scopes": ["raw", "entries"] }
+  ]
+}

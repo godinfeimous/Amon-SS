@@ -1,0 +1,22 @@
+root = true
+
+[*]
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+# Windows PowerShell 5.1 lee los scripts sin BOM como ANSI: los glifos y acentos exigen BOM.
+[*.{ps1,psm1,psd1}]
+charset = utf-8-bom
+
+[*.{json,md,cs,yml,yaml,txt}]
+charset = utf-8
+
+[*.{yml,yaml,json}]
+indent_size = 2
+
+[*.md]
+end_of_line = lf
+trim_trailing_whitespace = false

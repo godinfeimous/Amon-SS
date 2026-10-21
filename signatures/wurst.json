@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "wurst",
+  "name": "Wurst Client (Wurst7)",
+  "category": "cheat-client",
+  "description": "Cliente de hacks de código abierto para Fabric.",
+  "openSource": true,
+  "loaders": ["fabric"],
+  "references": ["https://github.com/Wurst-Imperium/Wurst7"],
+  "keywords": ["wurst"],
+  "falsePositives": [
+    "Wurst-Imperium publica también mods normales (p. ej. WI Zoom). Hay que basarse en net/wurstclient/ o en el id 'wurst', no en el autor."
+  ],
+  "notes": "La carpeta '.Wurst encryption' vive en el perfil del usuario, fuera de .minecraft, y suele sobrevivir a borrar el juego.",
+  "indicators": [
+    { "id": "wurst.package", "type": "package", "value": "net/wurstclient/", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/Wurst-Imperium/Wurst7/master/src/main/java/net/wurstclient/WurstClient.java" },
+    { "id": "wurst.modid", "type": "modid", "value": "wurst", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/Wurst-Imperium/Wurst7/master/src/main/resources/fabric.mod.json" },
+    { "id": "wurst.entrypoint", "type": "entrypoint", "value": "net.wurstclient.WurstInitializer", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/Wurst-Imperium/Wurst7/master/src/main/resources/fabric.mod.json" },
+    { "id": "wurst.mixins", "type": "entry", "value": "wurst.mixins.json", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/Wurst-Imperium/Wurst7/master/src/main/resources/fabric.mod.json" },
+    { "id": "wurst.accesswidener", "type": "entry", "value": "wurst.accesswidener", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/Wurst-Imperium/Wurst7/master/src/main/resources/fabric.mod.json" },
+    { "id": "wurst.config", "type": "config", "value": "wurst", "relativeTo": "gameDir", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/Wurst-Imperium/Wurst7/master/src/main/java/net/wurstclient/WurstClient.java", "note": "wurstFolder = gameDirectory.resolve(\"wurst\")" },
+    { "id": "wurst.encryption", "type": "config", "value": ".Wurst encryption", "relativeTo": "userHome", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/Wurst-Imperium/Wurst7/master/src/main/java/net/wurstclient/altmanager/Encryption.java" },
+    { "id": "wurst.log.start", "type": "log", "value": "Starting Wurst Client...", "match": "literal", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/Wurst-Imperium/Wurst7/master/src/main/java/net/wurstclient/WurstClient.java", "note": "System.out.println; aparece como línea [STDOUT] en latest.log." }
+  ]
+}

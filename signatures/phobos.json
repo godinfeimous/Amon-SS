@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "phobos",
+  "name": "Phobos",
+  "category": "cheat-client",
+  "description": "Cliente para Forge 1.12.2 sin repositorio oficial. Indicadores de un fork archivado no oficial (PerryPhobos).",
+  "openSource": false,
+  "loaders": ["forge-1.12.2"],
+  "references": ["https://github.com/eralp232/PerryPhobos-Latest"],
+  "keywords": ["phobos"],
+  "falsePositives": ["3arthh4ck (me/earth/earthhack/) es otro cliente derivado de Phobos."],
+  "notes": "Todos los indicadores son secundarios.",
+  "indicators": [
+    { "id": "phobos.package", "type": "package", "value": "me/earth/phobos/", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/eralp232/PerryPhobos-Latest/HEAD/src/main/java/me/earth/phobos/Phobos.java" },
+    { "id": "phobos.modid", "type": "modid", "value": "phobos", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/eralp232/PerryPhobos-Latest/HEAD/src/main/resources/mcmod.info" },
+    { "id": "phobos.mixins", "type": "entry", "value": "mixins.phobos.json", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/eralp232/PerryPhobos-Latest/HEAD/build.gradle" },
+    { "id": "phobos.config", "type": "config", "value": "phobos", "relativeTo": "gameDir", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/eralp232/PerryPhobos-Latest/HEAD/src/main/java/me/earth/phobos/manager/ConfigManager.java" }
+  ]
+}

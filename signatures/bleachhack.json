@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "bleachhack",
+  "name": "BleachHack",
+  "category": "cheat-client",
+  "description": "Cliente de hacks de código abierto para Fabric.",
+  "openSource": true,
+  "loaders": ["fabric"],
+  "references": ["https://github.com/BleachDev/BleachHack"],
+  "keywords": ["bleachhack"],
+  "falsePositives": ["La carpeta 'bleach' es un nombre genérico: por sí sola es débil."],
+  "notes": "Ramas verificadas: 1.17.1 a 1.20.4 (raíz en 1.19.4).",
+  "indicators": [
+    { "id": "bleach.package", "type": "package", "value": "org/bleachhack/", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/BleachDev/BleachHack/1.19.4/src/main/java/org/bleachhack/BleachHack.java" },
+    { "id": "bleach.modid", "type": "modid", "value": "bleachhack", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/BleachDev/BleachHack/1.19.4/src/main/resources/fabric.mod.json" },
+    { "id": "bleach.entrypoint", "type": "entrypoint", "value": "org.bleachhack.BleachHack", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/BleachDev/BleachHack/1.19.4/src/main/resources/fabric.mod.json" },
+    { "id": "bleach.mixins", "type": "entry", "value": "bleachhack.mixins.json", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/BleachDev/BleachHack/1.19.4/src/main/resources/fabric.mod.json" },
+    { "id": "bleach.accesswidener", "type": "entry", "value": "bleachhack.accesswidener", "strength": "strong", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/BleachDev/BleachHack/1.19.4/src/main/resources/fabric.mod.json" },
+    { "id": "bleach.config", "type": "config", "value": "bleach", "relativeTo": "gameDir", "strength": "weak", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/BleachDev/BleachHack/1.19.4/src/main/java/org/bleachhack/util/io/BleachFileMang.java" },
+    { "id": "bleach.log.loaded", "type": "log", "value": "Loaded BleachHack \\(Phase [12]\\) in \\d+ ms\\.", "match": "regex", "strength": "medium", "provenance": "primary-source", "validated": true, "source": "https://raw.githubusercontent.com/BleachDev/BleachHack/1.19.4/src/main/java/org/bleachhack/BleachHack.java" }
+  ]
+}

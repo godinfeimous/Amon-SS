@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "coffee",
+  "name": "Coffee Client",
+  "category": "cheat-client",
+  "description": "Cliente para Fabric 1.20.1. El repositorio oficial ya no existe; indicadores de una copia no oficial.",
+  "openSource": true,
+  "loaders": ["fabric"],
+  "references": ["https://github.com/sapphics/Coffee"],
+  "keywords": ["coffeeclient"],
+  "falsePositives": [
+    "Hay mods legítimos con 'coffee' en el nombre (CoffeeProxy, Coffee Delight): basarse en el paquete coffee/client/, no en el nombre.",
+    "Repositorios como Minecraft-Coffee-Client/* parecen spam o distribución de malware; no son fuente."
+  ],
+  "notes": "Todos los indicadores son secundarios porque el repositorio oficial no está disponible.",
+  "indicators": [
+    { "id": "coffee.package", "type": "package", "value": "coffee/client/", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/sapphics/Coffee/master/src/main/java/coffee/client/CoffeeMain.java" },
+    { "id": "coffee.modid", "type": "modid", "value": "coffee", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/sapphics/Coffee/master/src/main/resources/fabric.mod.json" },
+    { "id": "coffee.mixins", "type": "entry", "value": "coffee.mixins.json", "strength": "medium", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/sapphics/Coffee/master/src/main/resources/fabric.mod.json" },
+    { "id": "coffee.config", "type": "config", "value": "coffee", "relativeTo": "gameDir", "strength": "weak", "provenance": "secondary", "validated": false, "source": "https://raw.githubusercontent.com/sapphics/Coffee/master/src/main/java/coffee/client/CoffeeMain.java" }
+  ]
+}

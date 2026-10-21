@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "theme": "FullPurple",
+  "glyphs": "auto",
+  "animations": true,
+  "defaultDays": 7,
+  "reportDirectory": "%LOCALAPPDATA%\\AmonSS\\reports",
+  "reportFormats": ["txt", "json", "html"],
+  "moduleTimeoutSeconds": 180,
+  "limits": {
+    "maxJarSizeMB": 64,
+    "maxEntrySizeMB": 16,
+    "maxDecompressedPerJarMB": 256,
+    "maxEntriesPerJar": 60000,
+    "maxNestedJarDepth": 2,
+    "maxRawScanMB": 128,
+    "maxExecutableScanMB": 64,
+    "maxFilesPerDirectory": 5000,
+    "maxLogFiles": 60,
+    "maxLogSizeMB": 64,
+    "maxUsnResults": 20000,
+    "maxTableRows": 40,
+    "maxTempFiles": 4000
+  },
+  "minecraft": {
+    "extraInstancePaths": [],
+    "standardGameDirectories": [
+      "assets", "bin", "config", "crash-reports", "defaultconfigs", "downloads", "kubejs", "libraries", "logs",
+      "mods", "natives", "resourcepacks", "saves", "schematics", "screenshots", "server-resource-packs",
+      "shaderpacks", "versions", "journeymap", "xaero", "XaeroWaypoints", "XaeroWorldMap", "emotes",
+      "datapacks", "global_packs", "patchouli_books", "fancymenu_data", "replay_recordings", "debug", "cache",
+      "jfr", "profilekeys", "texturepacks", "openloader", "local", "options", "data", "essential", "skins"
+    ]
+  },
+  "scan": {
+    "extraScanPaths": [],
+    "scanVersionJarsWhenHashUnverified": true
+  },
+  "keywords": [
+    "minecraft", ".minecraft", "javaw.exe", "java.exe", "lunar", "badlion", "feather", "prismlauncher",
+    "multimc", "polymc", "curseforge", "modrinth", "tlauncher", "sklauncher", "atlauncher", "gdlauncher",
+    "fabric-loader", "neoforge", "forge", "quilt", "optifine", "labymod"
+  ],
+  "interestingExtensions": [".jar", ".exe", ".dll", ".bat", ".cmd", ".ps1", ".vbs", ".pf"],
+  "launcherProcessNames": [
+    "java.exe", "javaw.exe", "Minecraft.exe", "MinecraftLauncher.exe", "Minecraft.Windows.exe",
+    "Lunar Client.exe", "Badlion Client.exe", "Feather Launcher.exe", "Feather Client.exe",
+    "prismlauncher.exe", "PolyMC.exe", "MultiMC.exe", "CurseForge.exe", "Modrinth App.exe",
+    "ATLauncher.exe", "GDLauncher.exe", "TLauncher.exe", "SKlauncher.exe", "LabyMod Launcher.exe"
+  ],
+  "privacy": {
+    "showUnrelatedRecycleEntries": false
+  },
+  "updates": {
+    "repository": ""
+  },
+  "modules": {
+    "Minecraft": true,
+    "Signatures": true,
+    "Processes": true,
+    "Prefetch": true,
+    "Recent": true,
+    "UserAssist": true,
+    "Events": true,
+    "Temp": true,
+    "RecycleBin": true,
+    "USNJournal": true
+  }
+}
